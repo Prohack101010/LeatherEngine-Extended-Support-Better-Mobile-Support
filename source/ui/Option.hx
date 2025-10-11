@@ -108,6 +108,8 @@ class BoolOption extends Option {
 				Main.toggleLogs(optionChecked);
 			case "showCommitHash":
 				Main.toggleCommitHash(optionChecked);
+			case "showDiscord":
+				Main.toggleDiscord(optionChecked);
 			case "antialiasing":
 				for (member in FlxG.state.members) {
 					if (member is FlxSprite) {

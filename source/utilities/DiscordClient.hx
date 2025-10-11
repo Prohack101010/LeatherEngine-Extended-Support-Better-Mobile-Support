@@ -104,6 +104,7 @@ class DiscordClient {
 		final username:String = request[0].username;
 		final globalName:String = request[0].username;
 		final discriminator:Int = Std.parseInt(request[0].discriminator);
+		Main.display.discordUserName = username;
 
 		if (discriminator != 0)
 			trace('Discord: Connected to user ${username}#${discriminator} ($globalName)');

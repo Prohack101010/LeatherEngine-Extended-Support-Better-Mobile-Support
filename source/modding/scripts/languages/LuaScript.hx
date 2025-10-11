@@ -44,6 +44,14 @@ import haxe.Json;
 import flixel.util.FlxStringUtil;
 import openfl.display.ShaderParameter;
 
+import modcharting.FlxSprite3D;
+import flixel.perspective.PerspectiveSprite;
+import flixel.perspective.PerspectiveText;
+import shaders.Shaders.RTXEffect;
+import shaders.Shaders.RTXShader;
+import openfl.display.BitmapData;
+//import flixel.effects.particles.FlxEmitter;
+//import flixel.effects.particles.FlxParticle;
 using StringTools;
 
 typedef LuaCamera = {
@@ -711,6 +719,20 @@ class LuaScript extends Script {
 				CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
 		});
 
+
+			setFunction("makePerspectiveText", function(id:String, text:String, x:Float, y:Float, size:Int = 32, font:String = "vcr.ttf", fieldWidth:Float = 0) {
+			if (!lua_Sprites.exists(id)) {
+				var Sprite:PerspectiveText = new PerspectiveText(x, y, fieldWidth, text, size);
+				Sprite.setFormat(Paths.font("vcr.ttf"), size, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE_FAST, FlxColor.TRANSPARENT);
+				// Sprite.setFormat(Paths.font(font), size);
+				Sprite.font = Paths.font(font);
+
+				lua_Sprites.set(id, Sprite);
+
+				PlayState.instance.add(Sprite);
+			} else
+				CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
+		});
 		setFunction("newText", function(id:String, text:String, x:Float, y:Float, size:Int = 32, font:String = "vcr.ttf", fieldWidth:Float = 0) {
 			if (!lua_Sprites.exists(id)) {
 				var Sprite:FlxText = new FlxText(x, y, fieldWidth, text, size);
@@ -884,6 +906,25 @@ class LuaScript extends Script {
 				CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
 		});
 
+		setFunction("makeAnimatedPerspectiveSprite", function(id:String, filename:String, x:Float, y:Float, size:Float = 1, ?sizeY:Float = null) {
+			if (!lua_Sprites.exists(id)) {
+				var Sprite:PerspectiveSprite = new PerspectiveSprite(x, y);
+
+				if (filename != null && filename.length > 0)
+					Sprite.frames = Paths.getSparrowAtlas(filename);
+
+				Sprite.scale.set(size, sizeY == null ? size : sizeY);
+
+				Sprite.updateHitbox();
+
+				lua_Sprites.set(id, Sprite);
+
+				PlayState.instance.add(Sprite);
+			} else
+				CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
+		});
+
+
 		setFunction("makeDancingSprite",
 			function(id:String, filename:String, x:Float, y:Float, size:Float = 1, ?oneDanceAnimation:Bool, ?antialiasing:Bool, ?sizeY:Float = null) {
 				if (!lua_Sprites.exists(id)) {
@@ -902,6 +943,24 @@ class LuaScript extends Script {
 				} else
 					CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
 			});
+
+		setFunction("makePerspectiveSprite", function(id:String, filename:String, x:Float, y:Float, size:Float = 1, ?sizeY:Float = null) {
+			if (!lua_Sprites.exists(id)) {
+				var Sprite:PerspectiveSprite = new PerspectiveSprite(x, y);
+
+				if (filename != null && filename.length > 0)
+					Sprite.loadGraphic(Paths.gpuBitmap(filename));
+
+				Sprite.scale.set(size, sizeY == null ? size : sizeY);
+
+				Sprite.updateHitbox();
+
+				lua_Sprites.set(id, Sprite);
+
+				PlayState.instance.add(Sprite);
+			} else
+				CoolUtil.coolError("Sprite " + id + " already exists! Choose a different name!", "Leather Engine Modcharts");
+		});
 
 		setFunction("destroySprite", function(id:String) {
 			var sprite = lua_Sprites.get(id);
@@ -2711,6 +2770,163 @@ class LuaScript extends Script {
 					}
 				});
 		});
+
+
+		setFunction("setActorRTXShader", function(actorStr:String, shaderName:String) {
+            if (Options.getData("shaders"))
+                return;
+
+            var shad = lua_Shaders.get(shaderName);
+            var actor = getActorByName(actorStr);
+            
+
+
+            if(actor != null && shad != null)
+            {
+                //if (shad is RTXEffect)
+               // {
+                   
+                    var rtx:RTXEffect = cast shad;
+                    rtx.parentSprite = cast actor; //cast to reflected sprite
+
+                    @:privateAccess
+                    var stage_Data = PlayState.instance.stage.stageData;
+                    if (stage_Data.rtxData != null)
+                    {
+                        var overlay = FlxColor.fromString(stage_Data.rtxData.overlay);
+                        var satin = FlxColor.fromString(stage_Data.rtxData.satin);
+                        var inner = FlxColor.fromString(stage_Data.rtxData.inner);
+
+                        rtx.overlayColor = FlxColor.fromRGBFloat(overlay.redFloat, overlay.greenFloat, overlay.blueFloat, stage_Data.rtxData.overlayAlpha);
+                        rtx.satinColor = FlxColor.fromRGBFloat(satin.redFloat, satin.greenFloat, satin.blueFloat, stage_Data.rtxData.satinAlpha);
+                        rtx.innerShadowColor = FlxColor.fromRGBFloat(inner.redFloat, inner.greenFloat, inner.blueFloat, stage_Data.rtxData.innerAlpha);
+            
+                        rtx.innerShadowAngle = stage_Data.rtxData.innerAngle;
+                        rtx.innerShadowDistance = stage_Data.rtxData.innerDistance;
+                        rtx.updateColorShift();
+        
+                        if (stage_Data.rtxData.pointLight != null)
+                        {
+                            rtx.pointLight = stage_Data.rtxData.pointLight;
+                            rtx.lightX = stage_Data.rtxData.lightX;
+                            rtx.lightY = stage_Data.rtxData.lightY;
+                            trace(stage_Data.rtxData);
+                        }
+                            
+                    }
+                //}
+                actor.shader = Reflect.getProperty(shad, 'shader'); //use reflect to workaround compiler errors
+            }
+        });
+
+		// setFunction("tweenAngle3DX", function(id:String, toAngle:Float, duration:Float, ease:String = "linear", ?startDelay:Float = 0.0, ?onComplete:Dynamic) {
+		// 	if (id != null) {
+		// 		FlxTween.tween(id + ".angle3D", {x: toAngle}, duration, {
+		// 			ease: easeFromString(ease),
+		// 			onComplete: function(twn) {
+		// 				if (onComplete != null)
+		// 					onComplete();
+		// 			},
+		// 			startDelay: startDelay,
+		// 		});
+		// 	} else {
+		// 		trace('Object named $id doesn\'t exist!', ERROR);
+		// 	}
+		// });
+        // rtx sprites
+		
+	 
+		setFunction("tweenActorRTXColor", 
+			function(character:String, prop:String, value:String, time:Float, easeStr:String = "linear") {
+				if (Options.getData("shaders")) return;
+
+				var ease = easeFromString(easeStr);
+				var char:Character = getCharacterByName(character);
+				if (char != null) {
+					var startVal:FlxColor = Reflect.getProperty(char.rtxShader, prop);
+					var endVal:FlxColor = FlxColor.fromString(value);
+
+					PlayState.instance.tweenManager.color(null, time, startVal, endVal, {
+						onUpdate: function(tween:FlxTween) {
+							var ting = FlxColor.interpolate(startVal, endVal, ease(tween.percent));
+							Reflect.setProperty(char.rtxShader, prop, ting);
+						},
+						ease: ease,
+						onComplete: function(_) {
+							Reflect.setProperty(char.rtxShader, prop, endVal);
+						}
+					});
+				}
+			}
+		);
+
+	
+		setFunction("getActorRTXColor", 
+			function(character:String, prop:String) {
+				var char:Character = getCharacterByName(character);
+				if (char != null) {
+					var col:FlxColor = Reflect.getProperty(char.rtxShader, prop);
+					return col.toHexString();
+				}
+				return null;
+			}
+		);
+
+		setFunction("setActorRTXProperty", 
+			function(character:String, prop:String, value:Dynamic) {
+				if (Options.getData("shaders")) return;
+
+				var char:Character = getCharacterByName(character);
+				if (char != null) {
+					if (char.otherCharacters != null) {
+						for (c in char.otherCharacters) {
+							Reflect.setProperty(c.rtxShader, prop, value);
+						}
+					} else {
+						Reflect.setProperty(char.rtxShader, prop, value);
+					}
+				}
+			}
+		);
+
+		setFunction("tweenActorRTXProperty", 
+			function(character:String, prop:String, value:Dynamic, time:Float, easeStr:String = "linear") {
+				if (Options.getData("shaders")) return;
+
+				var ease = easeFromString(easeStr);
+				var char:Character = getCharacterByName(character);
+				if (char != null) {
+					var startVal = Reflect.getProperty(char.rtxShader, prop);
+
+					if (char.otherCharacters != null) {
+						for (c in char.otherCharacters) {
+							PlayState.instance.tweenManager.num(startVal, value, time, {
+								onUpdate: function(tween:FlxTween) {
+									var ting = FlxMath.lerp(startVal, value, ease(tween.percent));
+									Reflect.setProperty(c.rtxShader, prop, ting);
+								},
+								ease: ease,
+								onComplete: function(_) {
+									Reflect.setProperty(c.rtxShader, prop, value);
+								}
+							});
+						}
+					} else {
+						PlayState.instance.tweenManager.num(startVal, value, time, {
+							onUpdate: function(tween:FlxTween) {
+								var ting = FlxMath.lerp(startVal, value, ease(tween.percent));
+								Reflect.setProperty(char.rtxShader, prop, ting);
+							},
+							ease: ease,
+							onComplete: function(_) {
+								Reflect.setProperty(char.rtxShader, prop, value);
+							}
+						});
+					}
+				}
+			}
+		);
+
 
 		setFunction("tweenActorProperty", function(id:String, prop:String, value:Dynamic, time:Float, easeStr:String = "linear") {
 			var actor = getActorByName(id);

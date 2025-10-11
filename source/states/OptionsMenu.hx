@@ -108,7 +108,7 @@ class OptionsMenu extends MusicBeatState {
 		"Info Display" => [
 			new PageOption("Back", "Graphics", "Go back to the graphics menu."),
 			new DisplayFontOption("Display Font", [
-				"-_sans",
+				"_sans",
 				Assets.getFont(Paths.font("vcr.ttf")).fontName,
 				Assets.getFont(Paths.font("consola.ttf")).fontName,
 				Assets.getFont(Paths.font("pixel.otf")).fontName
