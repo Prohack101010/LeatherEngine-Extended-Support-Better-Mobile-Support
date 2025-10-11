@@ -1,8 +1,5 @@
 package;
 
-import lime.system.System;
-import lime.utils.LogLevel;
-import haxe.PosInfos;
 import flixel.util.FlxSignal.FlxTypedSignal;
 import flixel.FlxG;
 import flixel.FlxGame;
@@ -24,48 +21,37 @@ import ui.logs.Logs;
 import sys.FileSystem;
 import sys.io.File;
 import sys.io.Process;
-#if linux
-import hxgamemode.GamemodeClient;
-#end
+import openfl.events.Event;
+import lime.system.CFFI;
+import polymod.backends.PolymodAssets;
+import openfl.display.BitmapData;
+import flixel.util.FlxColor;
+import openfl.display.Bitmap;
 
 class Main extends Sprite {
+	public static var game:FlxGame;
 	public static var display:SimpleInfoDisplay;
 	public static var logsOverlay:Logs;
 
 	public static var previousState:FlxState;
-
-	public static var onUncaughtError(default, null):FlxTypedSignal<UncaughtErrorEvent->Void> = new FlxTypedSignal<UncaughtErrorEvent->Void>();
-	public static var onCriticalError(default, null):FlxTypedSignal<String->Void> = new FlxTypedSignal<String->Void>();
-
-	@:noCompletion
-	private static function __init__():Void {
-		#if linux
-		// Request we start game mode
-		if (GamemodeClient.request_start() != 0) {
-			Sys.println('Failed to request gamemode start: ${GamemodeClient.error_string()}...');
-			System.exit(1);
-		} else {
-			Sys.println('Succesfully requested gamemode to start...');
-		}
-		#end
-	}
+	public static var onCrash(default, null):FlxTypedSignal<UncaughtErrorEvent->Void> = new FlxTypedSignal<UncaughtErrorEvent->Void>();
 
 	public function new() {
-		// just gonna do this so dce doesnt kill it and so someone doesnt remove it with a remove unused imports or something idk
-		untyped __cpp__('', utilities.ALSoft);
 		super();
 
 		#if sys
-		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, _onUncaughtError);
+		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, _onCrash);
 		#end
 
 		#if cpp
-		untyped __global__.__hxcpp_set_critical_error_handler(_onCriticalError); // this is important i guess?
+		untyped __global__.__hxcpp_set_critical_error_handler(_onCrash);
 		#end
 
 		CoolUtil.haxe_trace = Log.trace;
 		Log.trace = CoolUtil.haxe_print;
 		OpenFLLog.throwErrors = false;
+
+		game = new FlxGame(1280, 720, TitleState, 60, 60, true);
 
 		FlxG.signals.preStateSwitch.add(() -> {
 			Main.previousState = FlxG.state;
@@ -75,50 +61,25 @@ class Main extends Sprite {
 			CoolUtil.clearMemory();
 		});
 
-		addChild(new FlxGame(1280, 720, TitleState, 60, 60, true));
+		@:privateAccess
+		game._customSoundTray = ui.FunkinSoundTray;
+
+		addChild(game);
+
 		logsOverlay = new Logs();
 		logsOverlay.visible = false;
 		addChild(logsOverlay);
 
-		LogStyle.WARNING.onLog.add((data:Any, ?infos:PosInfos) -> CoolUtil.print(data, WARNING, infos));
-		LogStyle.ERROR.onLog.add((data:Any, ?infos:PosInfos) -> CoolUtil.print(data, ERROR, infos));
-		LogStyle.NOTICE.onLog.add((data:Any, ?infos:PosInfos) -> CoolUtil.print(data, LOG, infos));
+		init();
 
-		OpenFLLog.debug = (message:Dynamic, ?infos:PosInfos) -> {
-			if (OpenFLLog.level >= LogLevel.DEBUG) {
-				CoolUtil.print(message, DEBUG, infos);
-			}
-		};
-
-		OpenFLLog.error = (message:Dynamic, ?infos:PosInfos) -> {
-			if (OpenFLLog.level >= LogLevel.ERROR) {
-				CoolUtil.print(message, ERROR, infos);
-			}
-		};
-
-		OpenFLLog.info = (message:Dynamic, ?infos:PosInfos) -> {
-			if (OpenFLLog.level >= LogLevel.INFO) {
-				CoolUtil.print(message, LOG, infos);
-			}
-		};
-
-		OpenFLLog.warn = (message:Dynamic, ?infos:PosInfos) -> {
-			if (OpenFLLog.level >= LogLevel.WARN) {
-				CoolUtil.print(message, WARNING, infos);
-			}
-		};
-
-		OpenFLLog.verbose = (message:Dynamic, ?infos:PosInfos) -> {
-			if (OpenFLLog.level >= LogLevel.VERBOSE) {
-				CoolUtil.print(message, LOG, infos);
-			}
-		};
+		LogStyle.WARNING.onLog.add((data, ?pos) -> trace(data, WARNING, pos));
+		LogStyle.ERROR.onLog.add((data, ?pos) -> trace(data, ERROR, pos));
+		LogStyle.NOTICE.onLog.add((data, ?pos) -> trace(data, LOG, pos));
 
 		display = new SimpleInfoDisplay(8, 3, 0xFFFFFF, "_sans");
 		addChild(display);
 
-		// shader coords fix
-		// stolen from psych engine lol
+		// fix shaders cuando cambias tamaño
 		FlxG.signals.gameResized.add(function(w, h) {
 			if (FlxG.cameras != null) {
 				for (cam in FlxG.cameras.list) {
@@ -134,6 +95,51 @@ class Main extends Sprite {
 		});
 	}
 
+	private function init(?E:Event):Void {
+		if (hasEventListener(Event.ADDED_TO_STAGE)) {
+			removeEventListener(Event.ADDED_TO_STAGE, init);
+		}
+		setupGame();
+	}
+
+	private function setupGame():Void {
+		// Limpieza de cache
+		FlxG.signals.preStateSwitch.add(function() {
+			@:privateAccess
+			for (key in FlxG.bitmap._cache.keys()) {
+				var obj = FlxG.bitmap._cache.get(key);
+				if (obj != null) {
+					lime.utils.Assets.cache.image.remove(key);
+					openfl.Assets.cache.removeBitmapData(key);
+					FlxG.bitmap._cache.remove(key);
+				}
+			}
+
+			for (k => f in lime.utils.Assets.cache.font) lime.utils.Assets.cache.font.remove(k);
+			for (k => s in lime.utils.Assets.cache.audio) lime.utils.Assets.cache.audio.remove(k);
+
+			lime.utils.Assets.cache.clear();
+			openfl.Assets.cache.clear();
+
+			#if polymod
+			polymod.Polymod.clearCache();
+			#end
+
+			gc();
+		});
+
+		FlxG.signals.postStateSwitch.add(function() {
+			gc();
+		});
+
+		display = new SimpleInfoDisplay(10, 3, 0xFFFFFF, "_sans");
+		addChild(display);
+
+		FlxG.signals.gameResized.add(fixCameraShaders);
+
+		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, _onCrash);
+	}
+
 	public static inline function resetSpriteCache(sprite:Sprite):Void {
 		@:privateAccess {
 			sprite.__cacheBitmap = null;
@@ -141,19 +147,56 @@ class Main extends Sprite {
 		}
 	}
 
+
+	public static inline function toggleFPS(fpsEnabled:Bool):Void display.infoDisplayed[0] = fpsEnabled;
+	public static inline function toggleMem(memEnabled:Bool):Void display.infoDisplayed[1] = memEnabled;
+	public static inline function toggleVers(versEnabled:Bool):Void display.infoDisplayed[2] = versEnabled;
+	public static inline function toggleLogs(logsEnabled:Bool):Void display.infoDisplayed[3] = logsEnabled;
+	public static inline function toggleCommitHash(commitHashEnabled:Bool):Void display.infoDisplayed[4] = commitHashEnabled;
+	public static inline function toggleDiscord(discordUser:Bool):Void display.infoDisplayed[5] = discordUser;
+
 	public static inline function changeFont(font:String):Void {
-		display.defaultTextFormat = new TextFormat(font, (font == "_sans" ? 12 : 14), display.textColor);
+		var tf = display.defaultTextFormat;
+		display.defaultTextFormat = new TextFormat(
+			font,
+			tf.size,
+			display.textColor
+		);
 	}
 
+	// -------- FPS --------
+	public function setFPSCap(cap:Float) {
+		openfl.Lib.current.stage.frameRate = cap;
+	}
+	public function getFPSCap():Float {
+		return openfl.Lib.current.stage.frameRate;
+	}
+
+	// -------- Shaders --------
+	public static function fixCameraShaders(w:Int, h:Int) {
+		if (FlxG.cameras.list.length > 0) {
+			for (cam in FlxG.cameras.list) {
+				if (cam.flashSprite != null) {
+					@:privateAccess {
+						cam.flashSprite.__cacheBitmap = null;
+						cam.flashSprite.__cacheBitmapData = null;
+					}
+				}
+			}
+		}
+
+		if (FlxG.game != null) {
+			@:privateAccess {
+				FlxG.game.__cacheBitmap = null;
+				FlxG.game.__cacheBitmapData = null;
+			}
+		}
+	}
+
+	// -------- Crash handler --------
 	#if sys
-	/**
-	 * Shoutout to @gedehari for making the crash logging code
-	 * They make some cool stuff check them out!
-	 * @see https://github.com/gedehari/IzzyEngine/blob/master/source/Main.hx
-	 * @param e
-	 */
-	private function _onUncaughtError(e:UncaughtErrorEvent):Void {
-		onUncaughtError.dispatch(e);
+	private function _onCrash(e:UncaughtErrorEvent):Void {
+		onCrash.dispatch(e);
 		var error:String = "";
 		var path:String;
 		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
@@ -171,42 +214,29 @@ class Main extends Sprite {
 			}
 		}
 
-		// see the docs for e.error to see why we do this
-		// since i guess it can sometimes be an issue???
-		// /shrug - what-is-a-git 2024
 		var errorData:String = "";
-		if (e.error is Error) {
-			errorData = cast(e.error, Error).message;
-		} else if (e.error is ErrorEvent) {
-			errorData = cast(e.error, ErrorEvent).text;
-		} else {
-			errorData = Std.string(e.error);
-		}
+		if (e.error is Error) errorData = cast(e.error, Error).message;
+		else if (e.error is ErrorEvent) errorData = cast(e.error, ErrorEvent).text;
+		else errorData = Std.string(e.error);
 
 		error += "\nUncaught Error: " + errorData;
 		path = Sys.getCwd() + "crash/" + "crash-" + errorData + '-on-' + date + ".txt";
 
-		if (!FileSystem.exists("./crash/")) {
-			FileSystem.createDirectory("./crash/");
-		}
-
+		if (!FileSystem.exists("./crash/")) FileSystem.createDirectory("./crash/");
 		File.saveContent(path, error + "\n");
 
 		Sys.println(error);
 		Sys.println("Crash dump saved in " + Path.normalize(path));
 
-		var crashPath:String = "Crash" #if linux + '.x86_64' #end#if windows + ".exe" #end;
-
+		var crashPath:String = "Crash" #if linux + '.x86_64' #end #if windows + ".exe" #end;
 		if (FileSystem.exists("./" + crashPath)) {
 			Sys.println("Found crash dialog: " + crashPath);
-
 			#if linux
 			crashPath = "./" + crashPath;
-			new Process('chmod', ['+x', crashPath]); // make sure we can run the file lol
+			new Process('chmod', ['+x', crashPath]);
 			#end
 			FlxG.stage.window.visible = false;
 			new Process(crashPath, ['--crash_path="' + path + '"']);
-			// trace(process.exitCode());
 		} else {
 			Sys.println("No crash dialog found! Making a simple alert instead...");
 			FlxG.stage.window.alert(error, "Error!");
@@ -216,99 +246,30 @@ class Main extends Sprite {
 	}
 	#end
 
-	private static function _onCriticalError(message:String):Void {
-		try {
-			onCriticalError.dispatch(message);
-			var path:String;
-			var error:String = "";
-			var date:String = Date.now().toString();
+	// -------- Texturas GPU --------
+	public static var noGPU:Bool = false;
 
-			date = StringTools.replace(date, " ", "_");
-			date = StringTools.replace(date, ":", "'");
+	public static function loadGPUTexture(key:String, bitmap:BitmapData) {
+		var disable:Bool = Options.getData("gpuTextures");
+		if (disable || noGPU) return bitmap;
 
-			error = "Critical Error:\n" + message;
-			path = Sys.getCwd() + "crash/" + "crash-critical" + '-on-' + date + ".txt";
+		var tex = FlxG.stage.context3D.createRectangleTexture(bitmap.width, bitmap.height, BGRA, true);
+		tex.uploadFromBitmapData(bitmap);
+		bitmap.image.data = null;
+		bitmap.dispose();
+		bitmap.disposeImage();
+		bitmap = BitmapData.fromTexture(tex);
+		return bitmap;
+	}
 
-			if (!FileSystem.exists("./crash/")) {
-				FileSystem.createDirectory("./crash/");
-			}
+	// -------- Garbage collector --------
+	public static function gc() {
+		#if cpp
+		cpp.vm.Gc.enable(true);
+		#end
 
-			File.saveContent(path, error + "\n");
-
-			Sys.println(error);
-			Sys.println("Crash dump saved in " + Path.normalize(path));
-
-			var crashPath:String = "Crash" #if linux + '.x86_64' #end#if windows + ".exe" #end;
-
-			if (FileSystem.exists("./" + crashPath)) {
-				Sys.println("Found crash dialog: " + crashPath);
-
-				#if linux
-				crashPath = "./" + crashPath;
-				new Process('chmod', ['+x', crashPath]); // make sure we can run the file lol
-				#end
-				FlxG.stage.window.visible = false;
-				new Process(crashPath, ['--crash_path="' + path + '"']);
-				// trace(process.exitCode());
-			} else {
-				Sys.println("No crash dialog found! Making a simple alert instead...");
-				FlxG.stage.window.alert(message, "Critical Error!");
-			}
-		} catch (e:Dynamic) {
-			Sys.println('Error while handling crash: $e');
-
-			Sys.println('Message: $message');
-		}
 		#if sys
-		Sys.sleep(1); // wait a few moments of margin to process.
-		// Exit the game. Since it threw an error, we use a non-zero exit code.
-		openfl.Lib.application.window.close();
+		openfl.system.System.gc();	
 		#end
 	}
 }
-/*
-																 .:^^.
-															   .^~!777:
-															  :~!!77?J~
-															 ^!!!777?J~
-														   .~!!!77???J!
-														  .~7!!!77???J7
-														  ~!!7777?????7
-														 ^7777777????J?:
-														:!77777??????JJ:
-														^7?77777???JJJJ^
-														~7777??JYYJJ?JY7
-														~!7??JJJ???7???7.                                      .:::.
-													  .^!!777777???7????7.                                   :~~!7?7
-												   .:^~!!!!!!7777?J?????J7.                .^:.             ^~!!!7??.
-											...::^~~~~~~!!!!!!!!!7777???77!^.             ^7?J!           .~!!!!7??J:
-								   ..:::^^~~~~~~~~!!!!!!!!!!777!777777777777!^.          ~7????          .~7!!777?J7
-						   ..::^^~~~~~~!!!!!!!!!!!!!!!!!!7777777777777?????777!~^:.    .~77777?^.        ~!!!777??J~
-					 .::^^~~~~!!!!!!!!!!!!!!!!!!!777!!!777777777777777?????????777!~~^^~!!!!!!!7!~:.    ^!!!!7777?J~
-				 .^~~~~~~~~~~~~!!!!!!!!!!7777777777777777777777777777???????????777?777!!!!!777!777!!~~~!!!!!777??J!
-			  .^~~!!!!!!!!!!!!!7777777777777777777777?777????77?77????????????????77?????777777777???77??7!!777????7
-		   .:^~~~~~~!!!!!!!!!7777777777777777777???????????????????????????????????????????????????J????????7?????JJ:
-		.:^~~!7!!!!!!!!!!!7777777???????????????????????????????????????????????JJJ????JJJJ?????JJ?JJ???JJJJ???JJJJJ~
-	   :~~!!!!!!!!7777777777777?????J???J???????????????????J?????????????????????JJJ??JJJJJ?????JJ??J???JJJJJJ?JJJJ!
-	 .^!~77?777!77777777777????????JJJJJJJJJ?J????????????????JJJJ????????????JJJJJJJJ?JJJJJJJJJ?JJJ?JJJ?JJJJJ?JYJJJ?.
-	.~~!???????????????J????JJ??JJJJJJYJJJJJJJJJ?JJJJ??J??JJ?JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ??J?JJJJJJJYYJJJJ7
-	.~~7YYYJJJ?JJJJ??JJJJ?J?JJJ?JJJJJJYYYYYYYJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ?????!7JY5555YYJJJ!
-	:~7YYYYYYYYYYJJJYJJYJJJJYJJJYYYYYYYYYYYYYYYJYYJYYYJJJJJJJJYJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ?7~~:.   ~?5PP55YYJJJ7
-	.~!?5YYYY5YYYYJYYYYYYYYYYYJYYY55YY5YYYYYYYYYYYYYYYYYYYJJJJJYJY5JJYJJJYYJJJJJJJJJJJJJJJJJJJJJJJ?!:         .!YP5555YJJJ7:
-	.~!?55YYYYYYYYYYYY5YYYYY5YYY555555YYYYYYYY5YYYYYYYYYYYYJJJJYJYYJY5JYYYYJJJJJJJJYYYJJJJJJJJJJ7~.             :7Y555YYJJJ7
-	.!7JP5555555YYY555YYYY5555555555YYYYYYYYYY55P5YYYYYYYJJJJYYJYYJ5YJY55YY5YJJJ???????JJJJJJ7^.                 :7Y55YYJJJ.
-	.!?J5PPPP55555P555555555555555555YYYYYY5B#GG#PYJJYYYJJJJYJYYJY5YJ55555YJJJJ??????7~^^^^:                      .^?YYYY7.
-	 .^7?YY5PP555PPP5555555555555555555YYYY5GBGGPYYYYYYYYJJYYY5YJ5YY5555YYJJJJJJJJJJ??!~:                             .::
-	   .:~7?JY55YYYYYYYYYYYYY5YJJJJJJJJ???777777!!!!!!!!!!~~!!!!!!!~!55YYYJYYJJJJJJJJJ??7!:
-		  ..:^^^^^^^^^^^^^^^^^^^::::^:::::::::::::::::::::::::::::::^J55YYYYYYYJJJJJJJJJJJ?!^.
-			 ...:::::::::::::::::::^:::::::::::::^::^:::::::::::::::^!JY5YYYYYYJJYYJJJYYJJJ??7^
-				 ..::.:::::^::^^^^^^^^^^^^^^^^^^^^^^:::::::::::::::^^^!?JYYYYYYJJYYYYYJJJJJJJJJ7^.
-					  ....:^^^^^^^^^^~^^^^^^^::::::::::::::::::::::^^^~~!!7?YYYYY5YYYJJJJYYYJJJJJ?~.
-						  ..::^^:^^:^^:::::::::::::::::::::::::::^^^^^^^:.. :~7J5YYYYJJJJYJJJYYYYJJ?7^.
-								  ......:::::::::::::::::::::^^^::::..         .^7JYYYYYYYYYYYJJJJJJJJ?7~.
-												...............                   .~7JYYY55YYYYYJYYYJJYYJJ7^.
-																					 .:~7JYY5555YYYYYYYYJJYJ?:
-																						 .::^~!?JYY555YYYJJ7!.
-																								..:^~^^^~^.
- */
-// :3

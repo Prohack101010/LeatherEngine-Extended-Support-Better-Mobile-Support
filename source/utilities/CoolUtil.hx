@@ -216,8 +216,7 @@ class CoolUtil {
 		}
 		return min;
 	}
-
-	/**
+/**
 	 * Converts rgb values into hsv values.
 	 * @see https://math.stackexchange.com/questions/556341/rgb-to-hsv-color-conversion-algorithm
 	 * @see https://github.com/python/cpython/blob/3.9/Lib/colorsys.py
@@ -257,6 +256,54 @@ class CoolUtil {
 		h = (h / 6.0) % 1.0;
 
 		return [Std.int(h * 360), Std.int(s * 100), Std.int(v * 100)];
+	}
+	public static function fmod(f:Float, m:Float) { return f % m; }
+	public static function fabs(f:Float) { return Math.abs(f); }
+
+	public static function RGBToHSV(col:FlxColor)
+	{
+		var cmax = Math.max(Math.max(col.redFloat, col.greenFloat), col.blueFloat);
+		var cmin = Math.min(Math.min(col.redFloat, col.greenFloat), col.blueFloat);
+		var diff = cmax - cmin;
+
+		var hue:Float = 0.0;
+		var sat:Float = 0.0;
+		var brt:Float = 0.0;
+
+		if(diff > 0) 
+		{
+			if(cmax == col.redFloat)
+				hue = 60 * (fmod(((col.greenFloat - col.blueFloat) / diff), 6));
+			else if(cmax == col.greenFloat)
+				hue = 60 * (((col.blueFloat - col.redFloat) / diff) + 2);
+			else if(cmax == col.blueFloat)
+				hue = 60 * (((col.redFloat - col.greenFloat) / diff) + 4);
+			
+			if(cmax > 0)
+				sat = diff / cmax;
+			else
+				sat = 0;
+			
+			brt = cmax;
+		} 
+		else 
+		{
+			hue = 0;
+			sat = 0;
+			brt = cmax;
+		}
+		
+		if(hue < 0)
+			hue = 360 + hue;
+
+		return FlxColor.fromRGBFloat(hue/360, sat, brt);
+	}
+
+	public static function getShiftedColor(col:FlxColor, h:Float, s:Float, v:Float)
+	{
+		var hsv = RGBToHSV(col);
+
+		return FlxColor.fromHSB((hsv.redFloat + h)*360,hsv.greenFloat,hsv.blueFloat);
 	}
 
 	public static var errors(default, never):Map<String, FlxText> = new Map<String, FlxText>();

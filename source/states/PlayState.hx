@@ -49,6 +49,7 @@ import substates.GameOverSubstate;
 import substates.PauseSubState;
 import toolbox.ChartingState;
 import ui.DialogueBox;
+import ui.NoteTimer;
 import ui.HealthIcon;
 import utilities.NoteVariables;
 import utilities.Ratings;
@@ -584,6 +585,7 @@ class PlayState extends MusicBeatState {
 
 	static var playCutscenes:Bool = false;
 
+	var noteTimer:NoteTimer;
 	/**
 	 * Manages tweens in lua scripts to pause when game is
 	 */
@@ -1010,7 +1012,10 @@ class PlayState extends MusicBeatState {
 		iconP1.cameras = [camHUD];
 		iconP2.cameras = [camHUD];
 		scoreTxt.cameras = [camHUD];
-
+		noteTimer = new NoteTimer(this);  
+    	noteTimer.cameras = [camOther]; 
+		
+    	add(noteTimer);
 		startingSong = true;
 
 		// WINDOW TITLE POG
@@ -1441,7 +1446,9 @@ class PlayState extends MusicBeatState {
 
 		// Updating Discord Rich Presence (with Time Left)
 		#if DISCORD_ALLOWED
-		DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC, true, songLength / songMultiplier);
+			var accuracyStr = Std.string(accuracy) + "%";
+			var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
+			DiscordClient.changePresence(detailsText + ', Misses: ${misses}', statusText, iconRPC, true, songLength / songMultiplier,null);
 		#end
 		#end
 		call("startSong", []);
@@ -1746,30 +1753,38 @@ class PlayState extends MusicBeatState {
 		super.closeSubState();
 	}
 
-	override function onFocus():Void {
-		#if DISCORD_ALLOWED
-		if (health > minHealth && !paused) {
-			if (Conductor.songPosition > 0.0) {
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC, true,
-					((songLength - Conductor.songPosition) / songMultiplier >= 1 ? (songLength - Conductor.songPosition) / songMultiplier : 1));
-			} else {
-				DiscordClient.changePresence(detailsText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC);
-			}
-		}
-		#end
+				override function onFocus():Void {
+			#if DISCORD_ALLOWED
+				if (health > minHealth && !paused) {
+					var accuracyStr = Std.string(accuracy) + "%";
+					var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
 
-		super.onFocus();
-	}
+					if (Conductor.songPosition > 0.0) {
+						DiscordClient.changePresence(detailsText + ', Misses: ${misses}', statusText, iconRPC, true,
+							((songLength - Conductor.songPosition) / songMultiplier >= 1 ? (songLength - Conductor.songPosition) / songMultiplier : 1),
+							null);
+					} else {
+						DiscordClient.changePresence(detailsText + ', Misses: ${misses}', statusText, iconRPC, false, 0, null);
+					}
+				}
+			#end
+
+			super.onFocus();
+		}
+
 
 	override function onFocusLost():Void {
-		#if DISCORD_ALLOWED
-		if (health > minHealth && !paused) {
-			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC);
-		}
-		#end
+				#if DISCORD_ALLOWED
+				if (health > minHealth && !paused) {
+					var accuracyStr = Std.string(accuracy) + "%";
+					var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
 
-		super.onFocusLost();
-	}
+					DiscordClient.changePresence(detailsPausedText  + ', Misses: ${misses}', statusText, iconRPC, false,0,null);
+				}
+				#end
+
+				super.onFocusLost();
+			}
 
 	function resyncVocals():Void {
 		FlxG.sound.music.pitch = songMultiplier;
@@ -1854,8 +1869,20 @@ class PlayState extends MusicBeatState {
 		}
 	}
 
+	var discordUpdateTimer:Float = 0;
 	override function update(elapsed:Float) {
 		super.update(elapsed);
+		discordUpdateTimer += elapsed;
+		if (discordUpdateTimer >= 5.0) {
+			if (!paused && health > minHealth) {
+				var accuracyStr = Std.string(accuracy) + "%";
+				var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
+				#if DISCORD_ALLOWED
+				DiscordClient.changePresence(detailsText + ', Misses: ${misses}', statusText, iconRPC, true, songLength / songMultiplier, null);
+				#end
+			}
+			discordUpdateTimer = 0;
+		}
 		tweenManager.update(elapsed);
 		#if (flixel < "6.0.0")
 		FlxG.camera.followLerp = (elapsed * 2.4) * cameraSpeed;
@@ -2027,8 +2054,11 @@ class PlayState extends MusicBeatState {
 			openSubState(new GameOverSubstate(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y));
 
 			#if DISCORD_ALLOWED
-			// Game Over doesn't get his own variable because it's only used here
-			DiscordClient.changePresence("Game Over - " + detailsText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC);
+				// Game Over doesn't get its own variable because it's only used here
+				var accuracyStr = Std.string(accuracy) + "%";
+				var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
+
+				DiscordClient.changePresence("Game Over - " + detailsText + ', Misses: ${misses}', statusText, iconRPC, false, 0, null);
 			#end
 
 			call("onDeath", [Conductor.songPosition]);
@@ -2321,7 +2351,10 @@ class PlayState extends MusicBeatState {
 			openSubState(new PauseSubState());
 			call('onPausePost', []);
 			#if DISCORD_ALLOWED
-			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyStr + ")", iconRPC);
+				var accuracyStr = Std.string(accuracy) + "%";
+				var statusText = '${SONG.song} (${storyDifficultyStr}) Acc: ${accuracyStr}';
+
+				DiscordClient.changePresence(detailsPausedText + ', Misses: ${misses}', statusText, iconRPC, false, 0, null);
 			#end
 		}
 
@@ -2393,8 +2426,8 @@ class PlayState extends MusicBeatState {
 			set("cameraZoom", FlxG.camera.zoom);
 			set("bpm", Conductor.bpm);
 			set("songBpm", Conductor.bpm);
-			set("crochet", Conductor.crochet);
-			set("stepCrochet", Conductor.stepCrochet);
+			set("crochet", Conductor.crochet / songMultiplier);
+			set("stepCrochet", Conductor.stepCrochet  / songMultiplier);
 			set("conductor", {
 				bpm: Conductor.bpm,
 				crochet: Conductor.crochet,

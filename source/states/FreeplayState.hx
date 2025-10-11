@@ -33,7 +33,7 @@ using StringTools;
 using utilities.BackgroundUtil;
 
 class FreeplayState extends MusicBeatState {
-	public var songs:Array<FreeplaySong> = [];
+	public static var songs:Array<FreeplaySong> = [];
 
 	public var selector:FlxText;
 
@@ -527,7 +527,7 @@ class FreeplayState extends MusicBeatState {
 		PlayState.loadChartEvents = true;
 		PlayState.chartingMode = false;
 		destroyFreeplayVocals();
-		FlxG.switchState(() -> new PlayState());
+	    LoadingState.loadAndSwitchState(() -> new PlayState());
 	}
 
 	override function closeSubState() {

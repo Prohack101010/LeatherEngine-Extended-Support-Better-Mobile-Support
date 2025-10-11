@@ -4,7 +4,7 @@ import toolbox.util.NewModState;
 import ui.Option;
 import states.PlayState;
 import states.OptionsMenu;
-
+import toolbox.RTXDebug;
 class ToolboxState extends OptionsMenu {
 	#if MODDING_ALLOWED override inline function addModOptions() {}#end
 	override function create() {
@@ -19,6 +19,7 @@ class ToolboxState extends OptionsMenu {
 			"Tools" => [
 				new PageOption("Back", "Categories", "Go back to the main menu."),
 				new GameStateOption("Charter", ChartingState, "Open the chart editor."),
+				new GameStateOption("RTX Debug",() -> new RTXDebug("dad"),"Open the RTX editor"), // RTX
 				new CharacterCreatorOption("Character Creator", () -> new CharacterCreator("dad", "stage"), "Open the character creator."),
 				new GameStateOption("Stage Editor", () -> new StageMakingState("stage"), "Open the stage editor."),
 				#if MODCHARTING_TOOLS
@@ -37,8 +38,8 @@ class ToolboxState extends OptionsMenu {
 			]
 		];
 		if (PlayState.instance == null) {
-			pages["Tools"][4] = null;
 			pages["Tools"][1] = null;
+			pages["Tools"][5] = null;
 		}
 
 		super.create();

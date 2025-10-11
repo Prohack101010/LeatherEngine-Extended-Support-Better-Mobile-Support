@@ -108,15 +108,19 @@ class OptionsMenu extends MusicBeatState {
 		"Info Display" => [
 			new PageOption("Back", "Graphics", "Go back to the graphics menu."),
 			new DisplayFontOption("Display Font", [
-				"_sans",
+				"-_sans",
 				Assets.getFont(Paths.font("vcr.ttf")).fontName,
+				Assets.getFont(Paths.font("consola.ttf")).fontName,
 				Assets.getFont(Paths.font("pixel.otf")).fontName
 			],
 				"infoDisplayFont", "Change the font used for the info display."),
 			new BoolOption("FPS Counter", "fpsCounter", "Should the FPS counter be shown?"),
 			new BoolOption("Memory Counter", "memoryCounter", "Should the memory counter be shown?"),
 			new BoolOption("Version Display", "versionDisplay", "Should the engine version be shown?"),
-			new BoolOption("Commit Hash", "showCommitHash", "Should the hash for the current commit be shown?")
+			new BoolOption("Commit Hash", "showCommitHash", "Should the hash for the current commit be shown?"),
+			#if DISCORD_ALLOWED
+			new BoolOption("Discord", "showDiscord","Should the Discord be shown? , Good leak")
+			#end
 		],
 		"Judgements" => [
 			new PageOption("Back", "Gameplay", "Go back to the gameplay menu."),

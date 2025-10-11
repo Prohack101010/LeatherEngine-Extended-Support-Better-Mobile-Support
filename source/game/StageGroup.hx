@@ -21,7 +21,7 @@ import flixel.FlxSprite;
 import flixel.group.FlxGroup;
 import modding.CharacterConfig;
 import game.DancingSprite;
-
+import shaders.Shaders.VortexEffect;
 using StringTools;
 
 class StageGroup extends FlxGroup {
@@ -49,7 +49,7 @@ class StageGroup extends FlxGroup {
 
 	// other
 	public var onBeatHit_Group:FlxTypedGroup<FlxSprite> = new FlxTypedGroup<FlxSprite>();
-
+	public var vortexShader:VortexEffect = new VortexEffect();
 	public var foregroundSprites:FlxGroup = new FlxGroup();
 	public var infrontOfGFSprites:FlxGroup = new FlxGroup();
 
@@ -153,6 +153,12 @@ class StageGroup extends FlxGroup {
 							} else
 								sprite.loadGraphic(Paths.gpuBitmap((stageData.imageDirectory ?? stage) + "/" + object.file_Name, "stages"));
 
+
+							if(object.object_Name != null && object.object_Name == "vortex")
+                            {
+                                sprite.makeGraphic(1,1);
+                                sprite.shader = vortexShader.shader;
+                            }
 							if (object.scaleY == null) {
 								object.scaleY = (object?.scale) ?? 1;
 							}
@@ -225,6 +231,18 @@ class StageGroup extends FlxGroup {
 		char.scrollFactor.set(scroll, scroll);
 	}
 
+	override function update(elapsed:Float)
+    {
+        super.update(elapsed);        
+        if (vortexShader.hue != colorSwap.hue)
+            vortexShader.hue = colorSwap.hue;
+        if (vortexShader.brightness != colorSwap.brightness)
+            vortexShader.brightness = colorSwap.brightness;
+        if (vortexShader.saturation != colorSwap.saturation)
+            vortexShader.saturation = colorSwap.saturation;
+        vortexShader.update(elapsed);
+    }
+
 	public function setCharOffsets(?p1:Character, ?gf:Character, ?p2:Character):Void {
 		p1 ??= PlayState.boyfriend;
 
@@ -235,7 +253,55 @@ class StageGroup extends FlxGroup {
 		setPosition(p1, player_1_Point, p1_Scroll, p1ZIndex, useAbsolutePositions);
 		setPosition(gf, gf_Point, gf_Scroll, gfZIndex, useAbsolutePositions);
 		setPosition(p2, player_2_Point, p2_Scroll, p2ZIndex, useAbsolutePositions);
+
+		if (stageData != null)
+        {
+            if (stageData.rtxData != null)
+                {
+                    var chars = [p1, gf, p2];
+                    for (c in chars)
+                    {
+                        if (!c.debugMode)
+                        {
+                            setCharacterRTX(c);
+                            if (c.otherCharacters != null)
+                                for (o in c.otherCharacters)
+                                    setCharacterRTX(o); //set for extra chars
+                        }
+                    }
+                }
+        }
+
 	}
+
+	function setCharacterRTX(c:Character)
+    {
+        if (stageData.rtxData != null)
+        {
+            var overlay = FlxColor.fromString(stageData.rtxData.overlay);
+            var satin = FlxColor.fromString(stageData.rtxData.satin);
+            var inner = FlxColor.fromString(stageData.rtxData.inner);
+            if (!c.debugMode)
+            {
+                c.rtxShader.overlayColor = FlxColor.fromRGBFloat(overlay.redFloat, overlay.greenFloat, overlay.blueFloat, stageData.rtxData.overlayAlpha);
+                c.rtxShader.satinColor = FlxColor.fromRGBFloat(satin.redFloat, satin.greenFloat, satin.blueFloat, stageData.rtxData.satinAlpha);
+                c.rtxShader.innerShadowColor = FlxColor.fromRGBFloat(inner.redFloat, inner.greenFloat, inner.blueFloat, stageData.rtxData.innerAlpha);
+    
+                c.rtxShader.innerShadowAngle = stageData.rtxData.innerAngle;
+                c.rtxShader.innerShadowDistance = stageData.rtxData.innerDistance;
+                c.rtxShader.updateColorShift();
+
+                if (stageData.rtxData.pointLight != null)
+                {
+                    c.rtxShader.pointLight = stageData.rtxData.pointLight;
+                    c.rtxShader.lightX = stageData.rtxData.lightX;
+                    c.rtxShader.lightY = stageData.rtxData.lightY;
+                    //trace(stageData.rtxData);
+                }
+                
+            }
+        }
+    }
 
 	public function getCharacterPos(character:Int, char:Character = null):Array<Float> {
 		switch (character) {
@@ -323,8 +389,23 @@ typedef StageData = {
 	var backgroundColor:Null<String>;
 	var imageDirectory:Null<String>;
 	var useAbsolutePositions:Null<Bool>;
+	var rtxData:Null<RTXData>;
 }
+typedef RTXData = 
+{
+    var overlay:String;
+    var overlayAlpha:Float;
+    var satin:String;
+    var satinAlpha:Float;
+    var inner:String;
+    var innerAlpha:Float;
+    var innerDistance:Float;
+    var innerAngle:Float;
 
+    var ?pointLight:Bool;
+    var ?lightX:Float;
+    var ?lightY:Float;
+}
 typedef StageObject = {
 	// General sprite object Data //
 	var position:Array<Float>;

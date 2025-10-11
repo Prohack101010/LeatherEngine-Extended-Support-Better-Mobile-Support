@@ -8,18 +8,19 @@ import game.SongLoader.SongData;
 import utilities.NoteVariables;
 import states.PlayState;
 import flixel.FlxG;
+import flixel.addons.effects.FlxSkewedSprite;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.math.FlxMath;
 import flixel.math.FlxRect;
 
 using StringTools;
 
-class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.addons.effects.FlxSkewedSprite #end {
+class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else FlxSkewedSprite #end {
 	/**
 	 * The position of the note (in milliseconds)
 	 */
 	public var strumTime:Float = 0;
-
+	
 	public var mustPress:Bool = false;
 	public var noteData:Int = 0;
 	public var canBeHit:Bool = false;
@@ -75,6 +76,9 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 
 	public var playedHitSound:Bool = false;
 
+
+	public var isPunchNote:Bool = false;
+
 	#if MODCHARTING_TOOLS
 	/**
 	 * The mesh used for sustains to make them stretchy
@@ -89,9 +93,8 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 	public var z:Float = 0;
 	#end
 
-	public static final SCALE_MULT:Float = 1.474;
-
 	/**
+	 * @see https://discord.com/channels/929608653173051392/1034954605253107844/1163134784277590056
 	 * @see https://step-mania.fandom.com/wiki/Notes
 	 */
 	public static var quantColors:Array<Array<Int>> = [
@@ -206,11 +209,9 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 
 		frames = Note.getFrames(this);
 
-		var animationName:String = NoteVariables.animationDirections[localKeyCount - 1][noteData];
-
-		animation.addByPrefix("default", '${animationName}0', 24);
-		animation.addByPrefix("hold", '${animationName} hold0', 24);
-		animation.addByPrefix("holdend", '${animationName} hold end0', 24);
+		animation.addByPrefix("default", NoteVariables.animationDirections[localKeyCount - 1][noteData] + "0", 24);
+		animation.addByPrefix("hold", NoteVariables.animationDirections[localKeyCount - 1][noteData] + " hold0", 24);
+		animation.addByPrefix("holdend", NoteVariables.animationDirections[localKeyCount - 1][noteData] + " hold end0", 24);
 
 		var lmaoStuff:Float = Std.parseFloat(PlayState.instance.ui_settings[0]) * (Std.parseFloat(PlayState.instance.ui_settings[2])
 			- (Std.parseFloat(PlayState.instance.mania_size[localKeyCount - 1])));
@@ -280,7 +281,7 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 				if (prevNote.animation != null)
 					prevNote.animation.play("hold");
 
-				prevNote.scale.y *= Conductor.stepCrochet / 100 * SCALE_MULT * speed;
+				prevNote.scale.y *= Conductor.stepCrochet / 100 * 1.5 * speed;
 				prevNote.updateHitbox();
 				prevNote.centerOffsets();
 				prevNote.sustainScaleY = prevNote.scale.y;
@@ -292,19 +293,23 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 			sustainScaleY = scale.y;
 		}
 
+
+		if (arrowType.toLowerCase().contains("punch") || arrowType.toLowerCase().contains("bullet") || arrowType.toLowerCase().contains("sword")) {
+			this.isPunchNote = true; 
+		} else {
+			this.isPunchNote = false;
+		}
 		if (PlayState.instance.arrow_Configs.get(arrow_Type)[5] != null) {
 			if (PlayState.instance.arrow_Configs.get(arrow_Type)[5] == "true")
 				affectedbycolor = true;
 		}
-		var noteColor:Array<Float> = cast NoteColors.getNoteColor(animationName);
 
-		if (!ColorSwap.colorSwapCache.exists(Std.string(noteColor))) {
-			ColorSwap.colorSwapCache.set(Std.string(noteColor), new ColorSwap());
-		}
-		colorSwap = ColorSwap.colorSwapCache.get(Std.string(noteColor));
-		if (affectedbycolor) {
-			shader = colorSwap.shader;
-		}
+		colorSwap = new ColorSwap();
+		shader = affectedbycolor ? colorSwap.shader : null;
+
+		var realKeyCount:Int = mustPress ? song.playerKeyCount : song.keyCount;
+
+		var noteColor = NoteColors.getNoteColor(NoteVariables.animationDirections[realKeyCount - 1][noteData]);
 
 		if (colorSwap != null && noteColor != null) {
 			colorSwap.r = noteColor[0];
@@ -312,10 +317,8 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 			colorSwap.b = noteColor[2];
 		}
 	}
-
-	@:allow(states.PlayState)
+		@:allow(states.PlayState)
 	private var correctionOffset:Float = 0; // dont mess with this
-
 	/**
 	 * Calculates the Y value of a note.
 	 * @param note the note to calculate
@@ -342,7 +345,7 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 	override function update(elapsed:Float) {
 		super.update(elapsed);
 
-		angle = modAngle + localAngle;
+			#if MODCHARTING_TOOLS angle3D.z #else angle #end = modAngle + localAngle;
 
 		calculateCanBeHit();
 
@@ -391,7 +394,7 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else flixel.ad
 		if (isSustainNote && !inEditor && animation != null && !animation?.curAnim?.name?.endsWith('end')) {
 			scale.y = Std.parseFloat(PlayState.instance.ui_settings[0]) * (Std.parseFloat(PlayState.instance.ui_settings[2])
 				- (Std.parseFloat(PlayState.instance.mania_size[3])));
-			scale.y *= Conductor.stepCrochet / 100 * SCALE_MULT * speed;
+			scale.y *= Conductor.stepCrochet / 100 * 1.5 * speed;
 			updateHitbox();
 			centerOffsets();
 		}

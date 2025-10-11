@@ -1,9 +1,11 @@
 package game;
 
 import toolbox.CharacterCreator;
+import flxanimate.frames.FlxAnimateFrames;
 import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.FlxG;
 import flixel.FlxSprite;
+import flixel.FlxState;
 import flixel.addons.effects.FlxTrail;
 import flixel.util.FlxColor;
 import flixel.util.FlxDestroyUtil;
@@ -13,11 +15,20 @@ import lime.utils.Assets;
 import modding.CharacterConfig;
 import modding.scripts.languages.HScript;
 import states.PlayState;
+import flixel.math.FlxMatrix;
+import flixel.FlxCamera;
+import flixel.math.FlxRect;
+import shaders.Shaders.RTXEffect;
+import flixel.graphics.frames.FlxFrame.FlxFrameAngle;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.FlxBasic;
 
 /**
  * The base character class.
  */
-class Character extends FlxSprite {
+class Character extends ReflectedSprite {
 	public var animOffsets:Map<String, Array<Dynamic>> = new Map<String, Array<Dynamic>>();
 	public var debugMode:Bool = false;
 
@@ -26,12 +37,13 @@ class Character extends FlxSprite {
 
 	public var holdTimer:Float = 0;
 
+	public var animationNotes:Array<Dynamic> = [];
+
 	public var dancesLeftAndRight:Bool = false;
 
 	public var barColor:FlxColor = FlxColor.GREEN;
 	public var positioningOffset:Array<Float> = [0, 0];
 	public var cameraOffset:Array<Float> = [0, 0];
-
 	public var isCharacterGroup(default, null):Bool = false;
 	public var otherCharacters:Array<Character>;
 	public var mainCharacterID:Int = 0;
@@ -57,29 +69,34 @@ class Character extends FlxSprite {
 	#if HSCRIPT_ALLOWED
 	public var script:HScript;
 	#end
-
+	
+	public var rtxShader:RTXEffect = new RTXEffect();
 	public var singAnimPrefix:String = 'sing';
 
 	public var playFullAnim:Bool = false;
 	public var preventDanceForAnim:Bool = false;
-
 	public var ignoreDraw(default, null):Bool = false;
+	public var scaleMult:Float = 1.0;
+	
+	public var lastHitStrumTime:Float = 0;
+	public var justHitStrumTime:Float = -5000;
+	public var offsetOffset:Array<Float> = [0,0];
+	public var parent:FlxTypedGroup<FlxBasic>;
 
-	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false, ?isDeathCharacter:Bool = false) {
+	public function new(x:Float, y:Float, ?character:String = "bf", ?isPlayer:Bool = false, ?isDeathCharacter:Bool = false,scaleMult:Float = 1.0)  
+		{
 		super(x, y);
+		this.scaleMult = scaleMult;
+			animOffsets = new Map<String, Array<Dynamic>>();
 		curCharacter = character;
 		this.isPlayer = isPlayer;
 		this.isDeathCharacter = isDeathCharacter;
-		deathCharacter = "bf-dead";
-
+			deathCharacter = "bf-dead";
 		dancesLeftAndRight = false;
 
 		var ilikeyacutg:Bool = false;
-
-		if(!isPlayer){
-			barColor = FlxColor.RED;
-		}
-
+		rtxShader.parentSprite = this;
+		shader = rtxShader.shader;
 		switch (curCharacter.toLowerCase()) {
 			case '' | 'none' | 'empty' | 'nogf':
 				ignoreDraw = true;
@@ -147,6 +164,8 @@ class Character extends FlxSprite {
 					}
 				}
 			}
+		} else {
+			visible = false;
 		}
 		#if HSCRIPT_ALLOWED
 		if (Assets.exists(Paths.hx("data/character data/" + curCharacter + "/script"))) {
@@ -165,7 +184,7 @@ class Character extends FlxSprite {
 				curCharacter = characterName = isPlayer ? "bf" : "dad";
 			}
 			#if HSCRIPT_ALLOWED
-			if (FlxG.state is PlayState) {
+			if(FlxG.state is PlayState){
 				if (Assets.exists(Paths.hx("data/character data/" + characterName + "/script"))) {
 					script = new HScript(Paths.hx("data/character data/" + characterName + "/script"));
 
@@ -210,7 +229,7 @@ class Character extends FlxSprite {
 				looped: animation.loop,
 				indices: animation.indices
 			});
-			if (animation.anim.startsWith("dance")) {
+			if(animation.anim.startsWith("dance")){
 				returnCharacter.dancesLeftAndRight = true;
 			}
 			addOffset(animation.anim, (isPlayer ? -1 : 1) * (animation.offsets[0] ?? 0), animation.offsets[1] ?? 0);
@@ -244,8 +263,10 @@ class Character extends FlxSprite {
 			atlas.colorTransform = colorTransform;
 			atlas.blend = blend;
 			atlas.draw();
+			rtxShader.update(0);
 		} else {
 			super.draw();
+			rtxShader.update(0);
 		}
 	}
 
@@ -280,6 +301,11 @@ class Character extends FlxSprite {
 					offsetsFlipWhenEnemy = false;
 			} else
 				offsetsFlipWhenEnemy = config.offsetsFlipWhenEnemy;
+
+			if((isPlayer && offsetsFlipWhenPlayer) || (!isPlayer && offsetsFlipWhenEnemy))
+			{
+				rtxShader.flipX = true;
+			}
 
 			dancesLeftAndRight = config.dancesLeftAndRight;
 
@@ -343,6 +369,8 @@ class Character extends FlxSprite {
 			else if (config.antialiased != null)
 				antialiasing = config.antialiased;
 
+						scale *= scaleMult;
+
 			if (atlasMode) {
 				atlas.updateHitbox();
 				width = atlas.width;
@@ -358,7 +386,10 @@ class Character extends FlxSprite {
 
 			if (config.trail || FlxG.state is CharacterCreator) {
 				coolTrail = new FlxTrail(this, null, config.trailLength ?? 10, config.trailDelay ?? 3, config.trailStalpha ?? 0.4, config.trailDiff ?? 0.05);
+				coolTrail.cameras = this.cameras; // seguir la misma cámara que el actor
+				
 			}
+
 
 			if (config.swapDirectionSingWhenPlayer != null)
 				swapLeftAndRightSingPlayer = config.swapDirectionSingWhenPlayer;
@@ -381,19 +412,18 @@ class Character extends FlxSprite {
 				var character:Character;
 
 				if (!isPlayer)
-					character = new Character(x, y, characterData.name, isPlayer, isDeathCharacter);
+					character = new Character(x, y, characterData.name, isPlayer, isDeathCharacter, scaleMult);
 				else
-					character = new Boyfriend(x, y, characterData.name, isDeathCharacter);
+					character = new Boyfriend(x, y, characterData.name, isDeathCharacter, scaleMult);
 
 				if (flipX)
-					characterData.positionOffset[0] = 0 - characterData.positionOffset[0];
+					characterData.positionOffset[0] = 0 - characterData.positionOffset[0]*scaleMult;
 
-				character.positioningOffset[0] += characterData.positionOffset[0];
-				character.positioningOffset[1] += characterData.positionOffset[1];
+				character.positioningOffset[0] += characterData.positionOffset[0]*scaleMult;
+				character.positioningOffset[1] += characterData.positionOffset[1]*scaleMult;
 
 				otherCharacters.push(character);
 			}
-			loadGraphic('flixel/images/logo/default.png');
 		}
 
 		if (config.barColor == null)
@@ -442,7 +472,13 @@ class Character extends FlxSprite {
 		}
 	}
 
+	public function quickAnimAdd(animName:String, animPrefix:String)
+	{
+		animation.addByPrefix(animName, animPrefix, 24, false);
+	}
+
 	public var shouldDance:Bool = true;
+	public var forceAutoDance:Bool = false;
 
 	override function update(elapsed:Float) {
 		if (!debugMode && curCharacter != '' && hasAnims()) {
@@ -455,7 +491,7 @@ class Character extends FlxSprite {
 				preventDanceForAnim = false;
 				dance('');
 			}
-			if (!isPlayer) {
+			if (!isPlayer || forceAutoDance) {
 				if (curAnimName().startsWith('sing'))
 					holdTimer += elapsed * (FlxG.state == PlayState.instance ? PlayState.songMultiplier : 1);
 
@@ -476,6 +512,12 @@ class Character extends FlxSprite {
 			atlas.update(elapsed);
 		}
 
+				if (FlxG.state == PlayState.instance)
+			{
+				@:privateAccess
+				rtxShader.hue = PlayState.instance.stage.colorSwap.hue;
+			}
+
 		super.update(elapsed);
 	}
 
@@ -484,6 +526,8 @@ class Character extends FlxSprite {
 	public var lastAnim:String = '';
 
 	var mostRecentAlt:String = "";
+
+    public var extraSuffix:String = "";
 
 	public inline function curAnimLooped():Bool {
 		@:privateAccess
@@ -525,7 +569,7 @@ class Character extends FlxSprite {
 		if (shouldDance) {
 			if (!debugMode && curCharacter != '' && hasAnims() && (force || (!playFullAnim && !preventDanceForAnim))) {
 				var alt:String = '';
-
+				color = 0xFFFFFFFF;
 				if ((!dancesLeftAndRight && hasAnim("idle" + altAnim))
 					|| (dancesLeftAndRight && hasAnim("danceLeft" + altAnim) && hasAnim("danceRight" + altAnim)))
 					alt = altAnim;
@@ -552,7 +596,8 @@ class Character extends FlxSprite {
 		}
 	}
 
-	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void {
+	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0, ?strumTime:Float):Void {
+		lastAnim = AnimName;
 		if (playFullAnim || !hasAnim(AnimName))
 			return;
 
@@ -563,7 +608,100 @@ class Character extends FlxSprite {
 				AnimName = anim;
 		}
 
-		preventDanceForAnim = false; // reset it
+		AnimName += extraSuffix;
+
+		color = 0xFFFFFFFF;
+		if (animation.getByName(AnimName) == null)
+		{
+			if (AnimName.contains('dodge'))
+			{
+				color = 0xFF545454;
+				preventDanceForAnim = true;
+				AnimName = AnimName.replace("dodge", singAnimPrefix); //swap back to sing
+			}
+			else if (AnimName.contains("miss"))
+			{
+				color = 0xFF380045;
+				preventDanceForAnim = true;
+				AnimName = AnimName.replace("miss", ""); //remove miss to just place normal anim
+			}
+			else if (AnimName.contains("parry"))
+			{
+				AnimName = AnimName.replace("parry", singAnimPrefix); //swap back to sing
+			}
+			else if (AnimName.contains("-mic"))
+			{
+				AnimName = AnimName.replace("-mic", ""); //remove -mic if not found
+			}
+			else if (AnimName.contains("-alt"))
+			{
+				AnimName = AnimName.replace("-alt", "");
+			}
+		}
+
+
+		if (strumTime != null)
+		{
+			justHitStrumTime = strumTime;
+		}
+		else
+			justHitStrumTime = Conductor.songPosition;
+		
+		if (Math.abs(lastHitStrumTime - justHitStrumTime) < 50 && animation.curAnim != null || holdTimer >= Conductor.stepCrochet * singDuration * 0.001)
+		{
+			//trace('hit double');
+
+			var actor = this;
+			var Sprite:ReflectedSprite = new ReflectedSprite(actor.x, actor.y);
+			Sprite.drawFlipped = this.drawFlipped;
+			//copy sprite
+			Sprite.loadGraphicFromSprite(actor);
+			Sprite.alpha = 0.8 * actor.alpha;
+			Sprite.blend = ADD;
+			Sprite.color = barColor;
+			Sprite.angle = actor.angle;
+			Sprite.offset.x = actor.offset.x;
+			Sprite.offset.y = actor.offset.y;
+			Sprite.origin.x = actor.origin.x;
+			Sprite.origin.y = actor.origin.y;
+			Sprite.scale.x = actor.scale.x;
+			Sprite.scale.y = actor.scale.y;
+			Sprite.active = false;
+			Sprite.animation.frameIndex = actor.animation.frameIndex;
+			Sprite.flipX = actor.flipX;
+			Sprite.flipY = actor.flipY;
+			//Sprite.color = barColor;
+			Sprite.shader = rtxShader.copy().shader;
+
+			//play anim
+			Sprite.animation.play(animation.curAnim.name, Force, Reversed, Frame);
+			Sprite.offset.set(actor.offset.x, actor.offset.y);
+
+			//add
+			Sprite.cameras = this.cameras;
+			(this.parent != null ? this.parent : FlxG.state).insert(FlxG.state.members.indexOf(this)-1, Sprite);
+
+			var props:Dynamic = {alpha: 0};
+			switch (AnimName) {
+				case 'singLEFT':
+					props.x = actor.x - 150;
+				case 'singRIGHT':
+					props.x = actor.x + 150;
+				case 'singUP':
+					props.y = actor.y - 150;
+				case 'singDOWN':
+					props.y = actor.y + 150;
+			}
+
+			FlxTween.tween(Sprite, props, Conductor.crochet * 0.0025, {
+				ease: FlxEase.elasticInOut,
+				onComplete: function(twn:FlxTween) {
+					Sprite.destroy();
+				}
+			});
+
+		}
+		lastHitStrumTime = justHitStrumTime;
 
 		if (atlasMode && atlas != null) {
 			atlas.anim.play(AnimName, Force, Reversed, Frame);
@@ -571,27 +709,32 @@ class Character extends FlxSprite {
 			animation.play(AnimName, Force, Reversed, Frame);
 		}
 
-		lastAnim = AnimName;
-
+		preventDanceForAnim = false; // reset it
+		
 		if (AnimName.contains('dodge'))
 			preventDanceForAnim = true;
 
 		var daOffset = animOffsets.get(AnimName);
-		if (animOffsets.exists(AnimName)) {
-			offset.set((daOffset[0] * _cosAngle) - (daOffset[1] * _sinAngle), (daOffset[1] * _cosAngle) + (daOffset[0] * _sinAngle));
-		} else
-			offset.set(0, 0);
+
+		if (animOffsets.exists(AnimName))
+			offset.set((daOffset[0]*scaleMult) + offsetOffset[0], (daOffset[1]*scaleMult) + offsetOffset[1]);
+		else
+			offset.set(offsetOffset[0], offsetOffset[1]);
 	}
 
-	public inline function addOffset(name:String, x:Float = 0, y:Float = 0) {
-		animOffsets.set(name, [
-			(isPlayer && offsetsFlipWhenPlayer) || (!isPlayer && offsetsFlipWhenEnemy) ? -x : x,
-			y
-		]);
-	}
+	public function addOffset(name:String, x:Float = 0, y:Float = 0)
+		{
+			if((isPlayer && offsetsFlipWhenPlayer) || (!isPlayer && offsetsFlipWhenEnemy))
+			{
+				drawFlipped = true;
+				x = 0 - x;
+			} //
 
+			animOffsets.set(name, [x, y]);
+		}
+	
 	public function getMainCharacter():Character {
-		if (isCharacterGroup && followMainCharacter) {
+		if (isCharacterGroup  && followMainCharacter) {
 			return otherCharacters[mainCharacterID];
 		}
 		return this;
@@ -622,4 +765,122 @@ typedef PsychAnimArray = {
 	var loop:Bool;
 	var indices:Array<Int>;
 	var offsets:Array<Int>;
+}
+class ReflectedSprite extends FlxSprite
+{
+	public var drawFlipped = false;
+	public var drawReflection:Bool = false;
+	public var reflectionYOffset:Float = 0;
+	public var reflectionAlpha:Float = 0.5;
+	private var _drawingReflection:Bool = false;
+	public var reflectionColor:FlxColor = 0xFF000000;
+	public var reflectionScaleY:Float = 0.6;
+
+	public var transform:FlxMatrix = new FlxMatrix();
+
+	override public function draw()
+	{
+		if (drawReflection)
+		{
+			_drawingReflection = true;
+			var startX = x;
+			var startY = y;
+			var alp = alpha;
+			var col = color;
+			var scaleY = scale.y;
+			//flip everything
+			color = reflectionColor;
+			scale.y = -scale.y;
+			offset.y = -offset.y;
+			alpha *= reflectionAlpha;
+			y += height+reflectionYOffset;
+			x += width;
+
+			transform.identity();
+
+			//transform.c += 2.0;
+			
+
+			super.draw(); //draw reflection
+			//reset back to default
+			scale.y = scaleY;
+			offset.y = -offset.y;
+			alpha = alp;
+			y = startY;
+			x = startX;
+			color = col;
+			_drawingReflection = false;
+		}
+		if (drawFlipped)
+		{
+			flipX = !flipX;
+			scale.x = -scale.x;
+			super.draw();
+			flipX = !flipX;
+			scale.x = -scale.x;
+		}
+		else 
+		{
+			super.draw(); //draw normal sprite
+		}
+	}
+
+	override function drawComplex(camera:FlxCamera):Void
+	{
+		_frame.prepareMatrix(_matrix, FlxFrameAngle.ANGLE_0, checkFlipX(), checkFlipY());
+
+		_matrix.translate(-origin.x, -origin.y);
+		_matrix.scale(scale.x, scale.y);
+		if (_drawingReflection)
+		{
+			_matrix.concat(transform);
+		}
+
+
+
+		if (bakedRotationAngle <= 0)
+		{
+			updateTrig();
+
+			if (angle != 0)
+				_matrix.rotateWithTrig(_cosAngle, _sinAngle);
+		}
+
+		getScreenPosition(_point, camera).subtractPoint(offset);
+		_point.add(origin.x, origin.y);
+		_matrix.translate(_point.x, _point.y);
+
+		if (isPixelPerfectRender(camera))
+		{
+			_matrix.tx = Math.floor(_matrix.tx);
+			_matrix.ty = Math.floor(_matrix.ty);
+		}
+
+
+		camera.drawPixels(_frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader);
+	}
+
+
+	override public function isOnScreen(?camera:FlxCamera):Bool //stupid shit breaking with negative scaley
+	{
+		return super.isOnScreen(camera);
+	}
+	override public function getScreenBounds(?newRect:FlxRect, ?camera:FlxCamera):FlxRect 
+	{
+		if (drawFlipped) //shoutout to CNE devs
+		{
+			scale.x = -scale.x;
+			var bounds = super.getScreenBounds(newRect, camera);
+			scale.x = -scale.x;
+			return bounds;
+		}
+		if (_drawingReflection)
+		{
+			scale.y = -scale.y;
+			var bounds = super.getScreenBounds(newRect, camera);
+			scale.y = -scale.y;
+			return bounds;
+		}
+		return super.getScreenBounds(newRect, camera);
+	}
 }

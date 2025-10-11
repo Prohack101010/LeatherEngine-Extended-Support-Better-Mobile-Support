@@ -90,9 +90,9 @@ class BoolOption extends Option {
 		switch (optionValue) // extra special cases
 		{
 			case "fpsCounter":
-				Main.display.showFPS = optionChecked;
+				Main.toggleFPS(optionChecked);
 			case "memoryCounter":
-				Main.display.showMemory = optionChecked;
+				Main.toggleMem(optionChecked);
 			#if DISCORD_ALLOWED
 			case "discordRPC":
 				if (optionChecked && !DiscordClient.active) {
@@ -103,18 +103,18 @@ class BoolOption extends Option {
 			#end
 
 			case "versionDisplay":
-				Main.display.showVersion = optionChecked;
-			case "showTracedLines":
-				Main.display.showTracedLines = optionChecked;
+				Main.toggleVers(optionChecked);
+			case "developer":
+				Main.toggleLogs(optionChecked);
 			case "showCommitHash":
-				Main.display.showCommitHash = optionChecked;
+				Main.toggleCommitHash(optionChecked);
 			case "antialiasing":
 				for (member in FlxG.state.members) {
 					if (member is FlxSprite) {
 						cast(member, FlxSprite).antialiasing = optionChecked;
 					}
 				}
-				FlxG.allowAntialiasing = FlxSprite.defaultAntialiasing = optionChecked;
+				FlxSprite.defaultAntialiasing = optionChecked;
 			case "vSync":
 				FlxG.stage.window.vsync = optionChecked;
 			case "throwExceptionOnError":
