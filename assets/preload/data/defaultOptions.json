@@ -21,6 +21,10 @@
 			"value": false
 		},
 		{
+			"option": "showDiscord",
+			"value": true
+		},
+		{
 			"option": "uiSkin",
 			"value": "default"
 		},
@@ -159,7 +163,7 @@
 		},
 		{
 			"option": "cameraTracksDirections",
-			"value": false
+			"value": true
 		},
 		{
 			"option": "cameraZooms",
