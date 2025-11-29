@@ -43,12 +43,15 @@ class StrumNote extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else FlxS
 	public function new(x:Float, y:Float, noteData:Int, ?ui_Skin:String, ?ui_settings:Array<String>, ?mania_size:Array<String>, ?keyCount:Int,
 			?isPlayer:Float) {
 		super(x, y);
-		if (ui_Skin == null)
-			ui_Skin = PlayState.SONG.ui_Skin;
+		if (ui_Skin == null) {
+		if (isPlayer == 1) ui_Skin = PlayState.SONG.ui_Skin_p1;
+		else if (isPlayer == 0) ui_Skin = PlayState.SONG.ui_Skin_p2;
+		else ui_Skin = PlayState.SONG.ui_Skin; // fallback general
+	}
+		// fallback al default si no existe
 		if(!Assets.exists('assets/data/ui skins/$ui_Skin')){
 			ui_Skin = 'default';
 		}
-
 
 		if (ui_settings == null)
 			ui_settings = PlayState.instance.ui_settings;

@@ -19,6 +19,7 @@ import flixel.util.FlxColor;
 import openfl.utils.Assets;
 import ui.Option;
 import flixel.FlxSubState;
+import flixel.math.FlxMath;
 
 using StringTools;
 
@@ -38,12 +39,13 @@ class PauseSubState extends MusicBeatSubstate {
 	public var MUSIC_INCREASE_SPEED = 0.02;
 
 	var menus = [
-		"default" => ['Resume', 'Restart Song','Quickly Options','Edit Keybinds','Options','Exit To Menu'],
+		"default" => ['Resume', 'Restart Song', 'Quickly Options', 'Play As', 'Edit Keybinds','Change Noteskin', 'Options', 'Exit To Menu'],
 		"Quickly Options" => ['Back', 'Bot', 'Auto Restart', 'No Miss', 'Ghost Tapping', 'No Death']
 	];
 
 	public function new() {
 		super();
+
 		var skin = PlayState.boyfriend.curCharacter;
 		var path = Paths.music('breakfast' + (Assets.exists(Paths.music('breakfast-' + skin, 'shared')) ? '-' + skin : ''), 'shared');
 		pauseMusic = new FlxSound().loadEmbedded(path, true, true);
@@ -72,7 +74,7 @@ class PauseSubState extends MusicBeatSubstate {
 
 		var diff = new FlxText(20, 47, 0, PlayState.storyDifficultyStr.toUpperCase(), 32);
 		diff.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, RIGHT);
-		diff.x = FlxG.width - (diff.width + 20);
+        diff.x = FlxG.width - (diff.width + 20);
 		add(diff);
 
 		scoreWarning = new FlxText(20, 79, 0, "Remember, changing options invalidates your score!", 32);
@@ -94,86 +96,82 @@ class PauseSubState extends MusicBeatSubstate {
 	}
 
 	override function update(elapsed:Float) {
-		if (pauseMusic.volume < MAX_MUSIC_VOLUME) pauseMusic.volume += MUSIC_INCREASE_SPEED * elapsed;
+		if (pauseMusic.volume < MAX_MUSIC_VOLUME)
+			pauseMusic.volume += MUSIC_INCREASE_SPEED * elapsed;
+
 		super.update(elapsed);
 
 		if (!controls.ACCEPT) justPressedAcceptLol = false;
 		if (controls.UP_P) changeSelection(-1);
 		if (controls.DOWN_P) changeSelection(1);
 		if (FlxG.mouse.wheel != 0) changeSelection(-Math.floor(FlxG.mouse.wheel));
+
 		if (FlxG.keys.justPressed.F6) PlayState.instance.toggleBotplay();
 
-		if (menus.get(menu)[curSelected].toLowerCase().contains("skip time")) handleSkipTime(elapsed);
+		if (menus.get(menu)[curSelected].toLowerCase().contains("skip time"))
+			handleSkipTime(elapsed);
 
 		if (controls.ACCEPT && !justPressedAcceptLol) {
 			justPressedAcceptLol = true;
-			handleSelection(menus.get(menu)[curSelected]);
+			handleSelection(menus.get(menu)[curSelected].toLowerCase());
 		}
 	}
 
 	function handleSkipTime(elapsed:Float) {
-		if (controls.LEFT_P) curTime -= 1000;
-		if (controls.RIGHT_P) curTime += 1000;
+		if (controls.LEFT_P) {
+			curTime -= 1000;
+			holdTime = 0;
+			updateAlphabets(false);
+		}
+		if (controls.RIGHT_P) {
+			curTime += 1000;
+			holdTime = 0;
+			updateAlphabets(false);
+		}
+
 		if (controls.LEFT || controls.RIGHT) {
 			holdTime += elapsed;
-			if (holdTime > 0.5) curTime += 45000 * elapsed * (controls.LEFT ? -1 : 1);
-			if (curTime >= FlxG.sound.music.length) curTime -= FlxG.sound.music.length;
-			if (curTime < 0) curTime += FlxG.sound.music.length;
+			if (holdTime > 0.5)
+				curTime += 45000 * elapsed * (controls.LEFT ? -1 : 1);
+
+			if (curTime >= FlxG.sound.music.length)
+				curTime -= FlxG.sound.music.length;
+			else if (curTime < 0)
+				curTime += FlxG.sound.music.length;
+
+			updateAlphabets(false);
 		}
-		updateAlphabets(false, false);
-	}
-
-	function updateAlphabets(?jump:Bool = true, ?playSound:Bool = true) {
-		grpMenuShit.clear();
-		var defaultMenu = menus.get("default").copy();
-		var playAs = utilities.Options.getData("playAs");
-		defaultMenu = defaultMenu.filter(function(item) return !item.toLowerCase().startsWith("play as"));
-		defaultMenu.push("Play As: " + playAs.charAt(0).toUpperCase() + playAs.substr(1));
-		menus.set("default", defaultMenu);
-
-		for (i in 0...menus.get(menu).length) {
-			var txt = menus.get(menu)[i];
-			var content = txt.toLowerCase().contains("skip time") 
-				? "Skip Time " + FlxStringUtil.formatTime(Math.floor(curTime / 1000), false) + " / " + FlxStringUtil.formatTime(Math.floor(FlxG.sound.music.length / 1000), false) 
-				: txt;
-			var songText = new Alphabet(0, (70 * i) + 30, content, true);
-			songText.isMenuItem = true;
-			songText.targetY = i;
-			grpMenuShit.add(songText);
-		}
-
-		if (jump && !(menus.get(menu)[curSelected].toLowerCase().startsWith("play as"))) {
-			curSelected = 0;
-		} 
-		else if (playSound) FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
-
-		changeSelection();
 	}
 
 	function handleSelection(sel:String) {
 		var s = sel.toLowerCase().trim();
-		switch(s) {
-			case "resume": closePause(); return;
-			case "restart song": restartSong(); return;
-			case "quickly options": switchMenu("Quickly Options"); return;
-			case "edit keybinds": openSub(new ControlMenuSubstate()); return;
-			case "options": openOptions(); return;
-			case "back": switchMenu("default"); return;
-			case "exit to menu": exitToMenu(); return;
-			case "bot": toggleOption("botplay", true); return;
-			case "auto restart": toggleOption("quickRestart"); return;
-			case "no miss": toggleOption("noHit"); return;
-			case "ghost tapping": toggleOption("ghostTapping", true); return;
-			case "no death": toggleOption("noDeath", true); return;
-			case "skip time": skipTimeAction(); return;
-			default:
-				if(s.startsWith("play as")) {
-					var current = utilities.Options.getData("playAs");
-					if(current == "bf") utilities.Options.setData("opponent", "playAs");
-					else utilities.Options.setData("bf", "playAs");
-					updateAlphabets(false);
-					return;
-				}
+		if (s == "resume") { closePause(); return; }
+		if (s == "restart song") { restartSong(); return; }
+		if (s == "quickly options") { switchMenu("Quickly Options"); return; }
+		if (s == "edit keybinds") { openSub(new ControlMenuSubstate()); return; }
+		if (s == "change noteskin") { openSub(new UISkinSelect()); return;}
+		if (s == "options") { openOptions(); return; }
+		if (s == "back") { switchMenu("default"); return; }
+		if (s == "exit to menu") { exitToMenu(); return; }
+		if (s == "bot") { toggleOption("botplay", true); return; }
+		if (s == "auto restart") { toggleOption("quickRestart"); return; }
+		if (s == "no miss") { toggleOption("noHit"); return; }
+		if (s == "ghost tapping") { toggleOption("ghostTapping", true); return; }
+		if (s == "no death") { toggleOption("noDeath", true); return; }
+		if (s == "skip time") { skipTimeAction(); return; }
+		if (s.startsWith("play as")) {
+			var current:Dynamic = utilities.Options.getData("playAs");
+			var cur:String = Std.string(current).toLowerCase().trim();
+			if (cur == "" || cur == "null") cur = "bf";
+
+			if (cur == "bf")
+				utilities.Options.setData("opponent", "playAs");
+			else
+				utilities.Options.setData("bf", "playAs");
+
+
+			updateAlphabets(false);
+			return;
 		}
 	}
 
@@ -204,6 +202,7 @@ class PauseSubState extends MusicBeatSubstate {
 	function openOptions() {
 		stopPauseMusic();
 		FlxG.switchState(() -> new PauseOptions());
+		PlayState.chartingMode = false;
 	}
 
 	function exitToMenu() {
@@ -214,7 +213,10 @@ class PauseSubState extends MusicBeatSubstate {
 	function skipTimeAction() {
 		if (curTime < Conductor.songPosition) {
 			PlayState.startOnTime = curTime;
-			resetSongValues();
+			PlayState.SONG.speed = PlayState.previousScrollSpeed;
+			PlayState.playCutscenes = true;
+			PlayState.SONG.keyCount = PlayState.instance.ogKeyCount;
+			PlayState.SONG.playerKeyCount = PlayState.instance.ogPlayerKeyCount;
 			stopPauseMusic();
 			FlxG.resetState();
 		} else {
@@ -251,8 +253,53 @@ class PauseSubState extends MusicBeatSubstate {
 		PlayState.SONG.validScore = true;
 	}
 
+	function updateAlphabets(?jump:Bool = true) {
+		grpMenuShit.clear();
+
+		var playAs = utilities.Options.getData("playAs");
+		if (playAs == null || playAs == "") {
+			playAs = "bf";
+			utilities.Options.setData("bf", "playAs");
+		}
+		var playAsText = playAs == "bf" ? "BF" : "Opponent";
+
+		for (i in 0...menus.get(menu).length) {
+			var item = menus.get(menu)[i];
+			var displayText = item;
+
+			if (item.toLowerCase().startsWith("play as"))
+				displayText = "Play As: " + playAsText;
+
+			if (item.toLowerCase().contains("skip time")) {
+				var songText:Alphabet = new Alphabet(
+					0, (70 * i) + 30,
+					"Skip Time "
+					+ FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false)
+					+ " / "
+					+ FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false),
+					true
+				);
+				songText.isMenuItem = true;
+				songText.targetY = i;
+				grpMenuShit.add(songText);
+			} else {
+				var songText:Alphabet = new Alphabet(0, (70 * i) + 30, displayText, true);
+				songText.isMenuItem = true;
+				songText.targetY = i;
+				grpMenuShit.add(songText);
+			}
+		}
+
+		if (jump)
+			curSelected = 0;
+		else
+			FlxG.sound.play(Paths.sound("scrollMenu"), 0.4);
+
+		changeSelection();
+	}
+
 	function changeSelection(change:Int = 0) {
-		FlxG.sound.play(Paths.sound('scrollMenu'));
+		FlxG.sound.play(Paths.sound("scrollMenu"));
 		curSelected = (curSelected + change + menus.get(menu).length) % menus.get(menu).length;
 		var i = 0;
 		for (item in grpMenuShit.members) {

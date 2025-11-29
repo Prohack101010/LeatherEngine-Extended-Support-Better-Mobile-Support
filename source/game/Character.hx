@@ -48,6 +48,8 @@ class Character extends ReflectedSprite {
 	public var otherCharacters:Array<Character>;
 	public var mainCharacterID:Int = 0;
 	public var followMainCharacter:Bool = false;
+	public var followAllCharacter:Bool = false;
+	public var activeCharacterID:Int = 0;
 
 	public var offsetsFlipWhenPlayer:Bool = true;
 	public var offsetsFlipWhenEnemy:Bool = false;
@@ -403,6 +405,10 @@ class Character extends ReflectedSprite {
 			if (config.mainCharacterID != null) {
 				mainCharacterID = config.mainCharacterID;
 			}
+
+			if (config.followAllCharacter != null)
+    				followAllCharacter = config.followAllCharacter;
+
 			if (config.followMainCharacter != null) {
 				followMainCharacter = config.followMainCharacter;
 			}
@@ -418,6 +424,9 @@ class Character extends ReflectedSprite {
 
 				if (flipX)
 					characterData.positionOffset[0] = 0 - characterData.positionOffset[0]*scaleMult;
+
+				character.zIndex = characterData.layer != null ? characterData.layer : 0;
+				character.alpha = characterData.alpha != null ? characterData.alpha : 1;
 
 				character.positioningOffset[0] += characterData.positionOffset[0]*scaleMult;
 				character.positioningOffset[1] += characterData.positionOffset[1]*scaleMult;
@@ -733,6 +742,16 @@ class Character extends ReflectedSprite {
 		}
 		return this;
 	}
+
+	public function getCameraCharacter():Character {
+			if (isCharacterGroup) {
+				if (followAllCharacter)
+					return otherCharacters[activeCharacterID];
+				else if (followMainCharacter)
+					return otherCharacters[mainCharacterID];
+			}
+			return this;
+		}
 }
 
 typedef PsychCharacterFile = {

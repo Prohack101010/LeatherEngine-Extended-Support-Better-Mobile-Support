@@ -89,6 +89,9 @@ class SongLoader {
 			stage: metadata.playData.stage,
 			speed: Reflect.field(song.scrollSpeed, difficulty),
 			ui_Skin: 'default',
+			ui_Skin_p1: 'default',
+			ui_Skin_p2: 'default',
+
 			notes: [
 				{
 					sectionNotes: [],
@@ -199,6 +202,13 @@ class SongLoader {
 		if (song.ui_Skin == null)
 			song.ui_Skin = song.song == "Senpai" || song.song == "Roses" || song.song == "Thorns" ? "pixel" : "default";
 
+		if (song.ui_Skin_p1 == null)
+			song.ui_Skin_p1 = song.ui_Skin;
+
+		if (song.ui_Skin_p2 == null)
+			song.ui_Skin_p2 = song.ui_Skin;
+
+
 		if (song.timescale == null)
 			song.timescale = [4, 4];
 
@@ -295,44 +305,47 @@ enum abstract ChartType(String) to String from String {
 }
 
 typedef SongData = {
-	// 0.2.8 and before stuff
-	var song:Null<String>;
-	var notes:Null<Array<Section>>;
-	var bpm:Null<Float>;
-	var needsVoices:Null<Bool>;
-	var speed:Null<Float>;
-	var player1:Null<String>;
-	var player2:Null<String>;
-	var validScore:Null<Bool>;
+    // 0.2.8 and before stuff
+    var song:Null<String>;
+    var notes:Null<Array<Section>>;
+    var bpm:Null<Float>;
+    var needsVoices:Null<Bool>;
+    var speed:Null<Float>;
+    var player1:Null<String>;
+    var player2:Null<String>;
+    var validScore:Null<Bool>;
+    
+    // engine specific stuff
+    var ui_Skin:Null<String>;        // UI Skin general
+    var ui_Skin_p1:Null<String>;     // UI Skin Player 1
+    var ui_Skin_p2:Null<String>;     // UI Skin Player 2
 
-	// engine specific shit
-	var gf:Null<String>;
-	var stage:Null<String>;
-	var ui_Skin:Null<String>;
+    var gf:Null<String>;
+    var stage:Null<String>;
 
-	var modchartPath:Null<String>;
-	var modchartingTools:Null<Bool>;
+    var modchartPath:Null<String>;
+    var modchartingTools:Null<Bool>;
 
-	var keyCount:Null<Int>;
-	var playerKeyCount:Null<Int>;
-	var events:Null<Array<Array<Dynamic>>>;
+    var keyCount:Null<Int>;
+    var playerKeyCount:Null<Int>;
+    var events:Null<Array<Array<Dynamic>>>;
 
-	var cutscene:Null<String>;
-	var endCutscene:Null<String>;
+    var cutscene:Null<String>;
+    var endCutscene:Null<String>;
 
-	var timescale:Null<Array<Int>>;
-	var chartOffset:Null<Float>; // in milliseconds
-	var specialAudioName:Null<String>;
+    var timescale:Null<Array<Int>>;
+    var chartOffset:Null<Float>; // in milliseconds
+    var specialAudioName:Null<String>;
 
-	var chartType:ChartType;
+    var chartType:ChartType;
 
-	// psych compat
-	var gfVersion:Null<String>;
-	var player3:Null<String>;
+    // psych compat
+    var gfVersion:Null<String>;
+    var player3:Null<String>;
 
-	// shaggy moment (ugh)
-	var mania:Null<Int>;
-	var moveCamera:Null<Bool>;
+    // shaggy moment (ugh)
+    var mania:Null<Int>;
+    var moveCamera:Null<Bool>;
 }
 
 typedef FNFCTimeChange = {

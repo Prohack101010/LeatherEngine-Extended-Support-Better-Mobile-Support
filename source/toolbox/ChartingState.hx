@@ -95,7 +95,7 @@ class ChartingState extends MusicBeatState {
 	var characters:Map<String, Array<String>> = new Map<String, Array<String>>();
 	var gridBlackLine:FlxSprite;
 	var gridEventBlackLine:FlxSprite;
-
+	
 	var selected_mod:String = "default";
 
 	var stepperSusLength:FlxUINumericStepper;
@@ -159,7 +159,7 @@ class ChartingState extends MusicBeatState {
 
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		add(gridBG);
-
+		
 		gridBGNext = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * 8, GRID_SIZE * 16);
 		gridBGNext.y += gridBG.height;
 		gridBGNext.color = FlxColor.GRAY;
@@ -226,8 +226,12 @@ class ChartingState extends MusicBeatState {
 
 		bpmTxt = new FlxText(1000, 50, 0, "", 16);
 		bpmTxt.scrollFactor.set();
-		add(bpmTxt);
+		bpmTxt.setFormat(null, 16, FlxColor.BLACK);
+		bpmTxt.borderStyle = FlxTextBorderStyle.OUTLINE;
+        bpmTxt.borderColor = 0xFFFFFFFF;
+        bpmTxt.borderSize = 1.5;
 
+		add(bpmTxt);
 		strumLine = new FlxSprite(0, 50).makeGraphic(Std.int(gridBG.width), 4);
 		add(strumLine);
 
@@ -903,6 +907,8 @@ class ChartingState extends MusicBeatState {
 		uiSkinDropDown.selectedLabel = _song.ui_Skin;
 
 		blockPressWhileScrolling.push(uiSkinDropDown);
+		
+
 
 		var mods:Array<String> = [];
 
@@ -937,22 +943,63 @@ class ChartingState extends MusicBeatState {
 		modDropDown.selectedLabel = selected_mod;
 
 		blockPressWhileScrolling.push(modDropDown);
-
-		// LABELS
 		var characterLabel = new FlxText(10, 10, 0, "Characters", 9);
 		var otherLabel = new FlxText(10, 100, 0, "Other", 9);
+		var uiSkinsLabel = new FlxText(10, modDropDown.y + 35, 0, "UI Skins Players", 9);
+		var modLabel = new FlxText(12 + modDropDown.width, modDropDown.y, 0, "Current Character Group", 9);
 
+		// LABELS PARA DROPDOWNS PRINCIPALES
 		var p1Label = new FlxText(12 + player1DropDown.width, player1DropDown.y, 0, "Player 1", 9);
 		var gfLabel = new FlxText(12 + gfDropDown.width, gfDropDown.y, 0, "Girlfriend", 9);
 		var p2Label = new FlxText(12 + player2DropDown.width, player2DropDown.y, 0, "Player 2", 9);
 		var stageLabel = new FlxText(12 + stageDropDown.width, stageDropDown.y, 0, "Stage", 9);
 		var uiSkinLabel = new FlxText(12 + uiSkinDropDown.width, uiSkinDropDown.y, 0, "UI Skin", 9);
 
-		var modLabel = new FlxText(12 + modDropDown.width, modDropDown.y, 0, "Current Character Group", 9);
+		var uiSkinP1DropDown = new FlxScrollableDropDownMenu(
+			uiSkinDropDown.x,
+			uiSkinsLabel.y + 15,
+			FlxScrollableDropDownMenu.makeStrIdLabelArray(uiSkins, true),
+			function(sel:String) {
+				_song.ui_Skin_p1 = uiSkins[Std.parseInt(sel)];
+
+				// Refrescar notas/eventos para que se vea el cambio, igual que modDropDown
+				while (curRenderedNotes.members.length > 0) curRenderedNotes.remove(curRenderedNotes.members[0], true);
+				while (curRenderedEvents.members.length > 0) curRenderedEvents.remove(curRenderedEvents.members[0], true);
+
+				updateGrid();
+			}
+		);
+		uiSkinP1DropDown.selectedLabel = _song.ui_Skin_p1;
+		blockPressWhileScrolling.push(uiSkinP1DropDown);
+		
+
+		var uiSkinP2DropDown = new FlxScrollableDropDownMenu(
+			uiSkinDropDown.x,
+			uiSkinP1DropDown.y + 20,
+			FlxScrollableDropDownMenu.makeStrIdLabelArray(uiSkins, true),
+			function(sel:String) {
+				_song.ui_Skin_p2 = uiSkins[Std.parseInt(sel)];
+
+				while (curRenderedNotes.members.length > 0) curRenderedNotes.remove(curRenderedNotes.members[0], true);
+				while (curRenderedEvents.members.length > 0) curRenderedEvents.remove(curRenderedEvents.members[0], true);
+
+				updateGrid();
+			}
+		);
+		uiSkinP2DropDown.selectedLabel = _song.ui_Skin_p2;
+		blockPressWhileScrolling.push(uiSkinP2DropDown);
+
+
+
+		// LABELS PARA DROPDOWNS DE UI SKINS (DESPUÉS DE CREAR LOS DROPDOWNS)
+		var uiSkinP1Label = new FlxText(12 + uiSkinP1DropDown.width, uiSkinP1DropDown.y, 0, "Player 1 UI Skin", 9);
+		var uiSkinP2Label = new FlxText(12 + uiSkinP2DropDown.width, uiSkinP2DropDown.y, 0, "Player 2 UI Skin", 9);
+
 
 		// adding labels
 		tab_group_note.add(characterLabel);
 		tab_group_note.add(otherLabel);
+		tab_group_note.add(uiSkinsLabel);
 
 		tab_group_note.add(p1Label);
 		tab_group_note.add(gfLabel);
@@ -962,8 +1009,13 @@ class ChartingState extends MusicBeatState {
 		tab_group_note.add(modLabel);
 
 		// adding main dropdowns
-		tab_group_note.add(modDropDown);
+		
 		tab_group_note.add(uiSkinDropDown);
+		 tab_group_note.add(uiSkinP2Label);
+		tab_group_note.add(uiSkinP1Label);
+		tab_group_note.add(uiSkinP2DropDown);
+		tab_group_note.add(uiSkinP1DropDown);
+		tab_group_note.add(modDropDown);
 		tab_group_note.add(stageDropDown);
 		tab_group_note.add(player2DropDown);
 		tab_group_note.add(gfDropDown);
@@ -1657,8 +1709,8 @@ class ChartingState extends MusicBeatState {
 	}
 
 	function updateHeads():Void {
-		var healthIconP1:String = loadHealthIconFromCharacter(_song.player1);
-		var healthIconP2:String = loadHealthIconFromCharacter(_song.player2);
+		var healthIconP1:String = _song.player1;
+		var healthIconP2:String = _song.player2;
 
 		if (_song.notes[curSection].mustHitSection) {
 			leftIcon.setupIcon(healthIconP1);
@@ -1696,138 +1748,124 @@ class ChartingState extends MusicBeatState {
 		if (curSelectedNote != null)
 			stepperSusLength.value = curSelectedNote[2];
 	}
-
 	function updateGrid():Void {
 		var uiSettings:Array<String> = CoolUtil.coolTextFile(Paths.txt("ui skins/" + _song.ui_Skin + "/config"));
 		remove(gridBG);
 		gridBG.kill();
 		gridBG.destroy();
-
 		gridBG = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * (_song.keyCount + _song.playerKeyCount + 1),
 			Std.int((GRID_SIZE * Conductor.stepsPerSection) * zoomLevel));
 		add(gridBG);
-
 		remove(gridBGNext);
 		gridBGNext.kill();
 		gridBGNext.destroy();
-
 		gridBGNext = FlxGridOverlay.create(GRID_SIZE, GRID_SIZE, GRID_SIZE * (_song.keyCount + _song.playerKeyCount + 1),
 			Std.int((GRID_SIZE * Conductor.stepsPerSection) * zoomLevel));
 		gridBGNext.y += gridBG.height;
 		gridBGNext.color = FlxColor.GRAY;
 		add(gridBGNext);
-
 		remove(gridBlackLine);
 		gridBlackLine.kill();
 		gridBlackLine.destroy();
-
-		gridBlackLine = new FlxSprite(gridBG.x
-			+ (GRID_SIZE * ((!_song.notes[curSection].mustHitSection ? _song.keyCount : _song.playerKeyCount)
-				+ 1))).makeGraphic(2, Std.int(gridBG.height), FlxColor.BLACK);
+		gridBlackLine = new FlxSprite(gridBG.x + (GRID_SIZE * ((!_song.notes[curSection].mustHitSection ? _song.keyCount : _song.playerKeyCount) + 1))).makeGraphic(2, Std.int(gridBG.height)*2, FlxColor.BLACK);
 		add(gridBlackLine);
-
 		remove(gridEventBlackLine);
 		gridEventBlackLine.kill();
 		gridEventBlackLine.destroy();
-
-		gridEventBlackLine = new FlxSprite(gridBG.x + GRID_SIZE).makeGraphic(2, Std.int(gridBG.height), FlxColor.BLACK);
+		gridEventBlackLine = new FlxSprite(gridBG.x + GRID_SIZE).makeGraphic(2, Std.int(gridBG.height)*2, FlxColor.BLACK);
 		add(gridEventBlackLine);
-
 		if (strumLine != null)
 			strumLine.makeGraphic(Std.int(gridBG.width), 4);
-
 		curRenderedNotes.clear();
-
 		curRenderedEvents.clear();
-
 		curRenderedIds.clear();
-
 		var sectionInfo:Array<Dynamic> = _song.notes[curSection].sectionNotes;
-
+		if (_song?.notes[curSection + 1]?.sectionNotes != null)
+			sectionInfo = sectionInfo.concat(_song.notes[curSection + 1].sectionNotes);
 		if (_song.notes[curSection].changeBPM && _song.notes[curSection].bpm > 0)
 			Conductor.changeBPM(_song.notes[curSection].bpm);
 		else {
-			// get last bpm
 			var daBPM:Float = _song.bpm;
-
 			for (i in 0...curSection)
 				if (_song.notes[i].changeBPM)
 					daBPM = _song.notes[i].bpm;
-
 			Conductor.changeBPM(daBPM);
 		}
-
 		for (i in sectionInfo) {
 			var daNoteInfo = i[1];
 			var daStrumTime = i[0];
 			var daSus = i[2];
-
 			var daType = i[4];
-
-			if (daType == null)
-				daType = "default";
+			if (daType == null) daType = "default";
 
 			var mustPress = daNoteInfo >= _song.keyCount;
-
 			if (_song.notes[curSection].mustHitSection)
 				mustPress = !(daNoteInfo >= _song.playerKeyCount);
 
 			var goodNoteInfo = daNoteInfo % (mustPress ? _song.playerKeyCount : _song.keyCount);
-
 			if (!_song.notes[curSection].mustHitSection && mustPress)
 				goodNoteInfo = daNoteInfo - _song.keyCount;
-
 			if (_song.notes[curSection].mustHitSection && !mustPress)
 				goodNoteInfo = daNoteInfo - _song.playerKeyCount;
 
-			var note:Note = new Note(daStrumTime, goodNoteInfo, null, false, 0, daType, _song, [0], mustPress, true);
-			note.sustainLength = daSus;
+			var originalSkin = _song.ui_Skin;
+			_song.ui_Skin = mustPress ? _song.ui_Skin_p1 : _song.ui_Skin_p2;
 
-			note.setGraphicSize((Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[4]) ?? Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[4])),
-				Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[2]));
+			var note:Note = new Note(
+				daStrumTime,
+				goodNoteInfo,
+				null,
+				false,
+				0,
+				daType,
+				_song,
+				[0],
+				mustPress,
+				true
+			);
+
+			_song.ui_Skin = originalSkin;
+
+			note.sustainLength = daSus;
+			note.setGraphicSize(
+				(Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[4]) ?? Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[4])),
+				Std.parseInt(PlayState.instance.arrow_Configs.get(daType)[2])
+			);
 			note.updateHitbox();
 
 			note.x = Math.floor((daNoteInfo + 1) * GRID_SIZE) + Std.parseFloat(PlayState.instance.arrow_Configs.get(daType)[1]);
 			note.y = Math.floor(getYfromStrum((daStrumTime - sectionStartTime())) + Std.parseFloat(PlayState.instance.arrow_Configs.get(daType)[3]));
 			note.antialiasing = uiSettings[3] == "true";
-
 			note.rawNoteData = daNoteInfo;
 
 			curRenderedNotes.add(note);
 
-			if (doFunnyNumbers && !note.isSustainNote) {
-				if (i[3] == null)
-					i[3] = 0;
-
-				var id:FlxText = new FlxText(Math.floor((daNoteInfo + 1) * GRID_SIZE), Math.floor(getYfromStrum((daStrumTime - sectionStartTime()))),
-					GRID_SIZE, Std.string(i[3]).replace("[", "").replace("]", ""), 16);
-				id.setBorderStyle(OUTLINE, FlxColor.BLACK, 1.5);
-				id.font = Paths.font("vcr.ttf");
-
-				var idIcon:FlxSprite = new FlxSprite(Math.floor((daNoteInfo + 1) * GRID_SIZE) - 16,
-					Math.floor(getYfromStrum((daStrumTime - sectionStartTime()))) - 12);
-				idIcon.loadGraphic(Paths.gpuBitmap("charter/idSprite", "shared"));
-				idIcon.setGraphicSize(20, 20);
-				idIcon.updateHitbox();
-				idIcon.antialiasing = false;
-
-				curRenderedIds.add(idIcon);
-				curRenderedIds.add(id);
-			}
-
 			var sustainGroup:Array<Note> = [];
 			for (susNote in 0...Math.floor(note.sustainLength / Std.int(Conductor.stepCrochet))) {
 				var oldNote = curRenderedNotes.members[curRenderedNotes.members.length - 1];
-				var sustainNote:Note = new Note(daStrumTime + (Conductor.stepCrochet * susNote) + Conductor.stepCrochet, goodNoteInfo, oldNote, true, 0,
-					daType, _song, [0], mustPress, true);
+
+				_song.ui_Skin = mustPress ? _song.ui_Skin_p1 : _song.ui_Skin_p2;
+				var sustainNote:Note = new Note(
+					daStrumTime + (Conductor.stepCrochet * susNote) + Conductor.stepCrochet,
+					goodNoteInfo,
+					oldNote,
+					true,
+					0,
+					daType,
+					_song,
+					[0],
+					mustPress,
+					true
+				);
+				_song.ui_Skin = originalSkin;
+
 				sustainNote.scale.set(note.scale.x, note.scale.y);
 				sustainNote.antialiasing = uiSettings[3] == "true";
 				sustainNote.updateHitbox();
 				sustainNote.x = note.x + (GRID_SIZE / 2) - Std.parseFloat(PlayState.instance.arrow_Configs.get(daType)[1]) - sustainNote.width / 2;
-				sustainNote.y = note.height
-					+ Math.floor(getYfromStrum((oldNote.strumTime - sectionStartTime())) + Std.parseFloat(PlayState.instance.arrow_Configs.get(daType)[3]));
-				curRenderedNotes.add(sustainNote);
+				sustainNote.y = note.height + Math.floor(getYfromStrum((oldNote.strumTime - sectionStartTime())) + Std.parseFloat(PlayState.instance.arrow_Configs.get(daType)[3]));
 
+				curRenderedNotes.add(sustainNote);
 				sustainGroup.push(sustainNote);
 				sustainNote.sustains = sustainGroup;
 			}
@@ -1835,21 +1873,38 @@ class ChartingState extends MusicBeatState {
 		}
 
 		if (colorQuantization) {
-			Note.applyColorQuants(curRenderedNotes.members);
+			for (note in curRenderedNotes.members) {
+				if (!note.isSustainNote && note.affectedbycolor) {
+					var col:Array<Int> = [255, 0, 0];
+					var noteBeat:Int = Math.floor(((note.strumTime / (Conductor.stepCrochet * 4)) * 48) + 0.5);
+					for (beat in 0...Note.beats.length) {
+						if ((noteBeat % (192 / Note.beats[beat]) == 0)) {
+							col = Note.quantColors[beat];
+							break;
+						}
+					}
+					note.colorSwap.r = col[0];
+					note.colorSwap.g = col[1];
+					note.colorSwap.b = col[2];
+					for (sustain in note.sustains) {
+						sustain.colorSwap.r = col[0];
+						sustain.colorSwap.g = col[1];
+						sustain.colorSwap.b = col[2];
+					}
+				}
+			}
 		}
-
 		if (events.length >= 1) {
 			for (event in events) {
 				if (Std.int(event[1]) >= Std.int(sectionStartTime()) && Std.int(event[1]) < Std.int(sectionStartTime(curSection + 1))) {
 					var eventSprite:EventSprite = new EventSprite(event);
-
 					eventSprite.y = Math.floor(getYfromStrum((event[1] - sectionStartTime()) % (Conductor.stepCrochet * Conductor.stepsPerSection)));
-
 					curRenderedEvents.add(eventSprite);
 				}
 			}
 		}
 	}
+
 
 	var events:Array<Array<Dynamic>> = [];
 

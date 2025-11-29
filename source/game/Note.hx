@@ -76,7 +76,6 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else FlxSkewed
 
 	public var playedHitSound:Bool = false;
 
-
 	public var isPunchNote:Bool = false;
 
 	#if MODCHARTING_TOOLS
@@ -154,27 +153,26 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else FlxSkewed
 		}
 	}
 
-	public static function getFrames(note:Note):FlxAtlasFrames {
-		var disallowGPU:Bool = #if MODCHARTING_TOOLS note.song.modchartingTools
-			|| FlxG.state is modcharting.ModchartEditorState #else false #end;
+		public static function getFrames(note:Note):FlxAtlasFrames {
+			var disallowGPU:Bool = #if MODCHARTING_TOOLS note.song.modchartingTools
+				|| FlxG.state is modcharting.ModchartEditorState #else false #end;
 
-		if (PlayState.instance.types.contains(note.arrow_Type)) {
-			var basePath:String = 'ui skins/${note.song.ui_Skin}/arrows/';
+			var skin:String = note.song.ui_Skin;
+			if (note.mustPress) skin = note.song.ui_Skin_p1;
+			else skin = note.song.ui_Skin_p2;
+
+			var basePath:String = 'ui skins/$skin/arrows/';
+
 			if (Assets.exists(Paths.image('$basePath${note.arrow_Type}', 'shared'))) {
 				return Paths.getSparrowAtlas('$basePath${note.arrow_Type}', 'shared', disallowGPU);
 			} else if (Assets.exists(Paths.image('${basePath}default', 'shared'))) {
 				return Paths.getSparrowAtlas('${basePath}default', 'shared', disallowGPU);
 			}
-		} else {
-			var basePath:String = 'ui skins/default/arrows/';
-			if (Assets.exists(Paths.image('$basePath${note.arrow_Type}', 'shared'))) {
-				return Paths.getSparrowAtlas('$basePath${note.arrow_Type}', 'shared', disallowGPU);
-			} else if (Assets.exists(Paths.image('ui skins/${note.song.ui_Skin}/arrows/default', 'shared'))) {
-				return Paths.getSparrowAtlas('ui skins/${note.song.ui_Skin}/arrows/default', 'shared', disallowGPU);
-			}
+
+			return Paths.getSparrowAtlas('ui skins/default/arrows/default', 'shared', disallowGPU);
 		}
-		return Paths.getSparrowAtlas('ui skins/default/arrows/default', 'shared', disallowGPU);
-	}
+
+
 
 	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?character:Int = 0, ?arrowType:String = "default",
 			?song:SongData, ?characters:Array<Int>, ?mustPress:Bool = false, ?inEditor:Bool = false) {
@@ -400,7 +398,8 @@ class Note extends #if MODCHARTING_TOOLS modcharting.FlxSprite3D #else FlxSkewed
 		}
 		return this.speed = speed;
 	}
-}
+
+	}
 
 typedef NoteType = {
 	var shouldHit:Bool;

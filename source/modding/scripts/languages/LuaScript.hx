@@ -52,6 +52,10 @@ import shaders.Shaders.RTXShader;
 import openfl.display.BitmapData;
 //import flixel.effects.particles.FlxEmitter;
 //import flixel.effects.particles.FlxParticle;
+#if VIDEOS_ALLOWED
+import modding.FlxVideo;
+
+#end
 using StringTools;
 
 typedef LuaCamera = {
@@ -1900,6 +1904,34 @@ class LuaScript extends Script {
 				getActorByName(id).setGraphicSize(getActorByName(id).width * scaleX, getActorByName(id).height * scaleY);
 		});
 
+		setFunction("setActorScaleX", function(scaleX:Float, id:String) {
+			if (getActorByName(id) != null)
+				getActorByName(id).setGraphicSize(getActorByName(id).width * scaleX, getActorByName(id).height);
+		});
+
+		setFunction("setActorScaleY", function(scaleY:Float, id:String) {
+			if (getActorByName(id) != null)
+				getActorByName(id).setGraphicSize(getActorByName(id).width, getActorByName(id).height * scaleY);
+		});
+
+		setFunction("getActorScaleX", function(id:String) {
+			if (getActorByName(id) != null)
+				return getActorByName(id).scale.x;
+			return 1;
+		});
+
+		setFunction("getActorScaleY", function(id:String) {
+			if (getActorByName(id) != null)
+				return getActorByName(id).scale.y;
+			return 1;
+		});
+
+		setFunction("getActorScaleXY", function(id:String) {
+			if (getActorByName(id) != null)
+				return {x:getActorByName(id).scale.x, y:getActorByName(id).scale.y};
+			return {x:1, y:1};
+		});
+
 		setFunction("setActorFlipX", function(flip:Bool, id:String) {
 			if (getActorByName(id) != null)
 				getActorByName(id).flipX = flip;
@@ -2069,6 +2101,103 @@ class LuaScript extends Script {
 			}
 			Reflect.setProperty(getActorByName(id), "reflectionColor", FlxColor.fromString(color));
 		});
+#if VIDEOS_ALLOWED
+			setFunction("startLuaVideo", function(name:String = "", ext:String = ".mp4") {
+            
+            var foundFile:Bool = false;
+            var fileName:String = #if sys Sys.getCwd() + PolymodAssets.getPath(Paths.video(name, ext)) #else Paths.video(name, ext) #end;
+    
+            #if sys
+            if(sys.FileSystem.exists(fileName)) {
+                foundFile = true;
+            }
+            #end
+    
+            if(!foundFile) {
+                fileName = Paths.video(name);
+    
+                #if sys
+                if(sys.FileSystem.exists(fileName)) {
+                #else
+                if(OpenFlAssets.exists(fileName)) {
+                #end
+                    foundFile = true;
+                }
+            }
+
+            if (foundFile)
+            {
+                @:privateAccess
+                PlayState.instance.canPause = false;
+
+                PlayState.instance.videoHandler = new FlxVideo(fileName);
+                PlayState.instance.videoHandler.finishCallback = function()
+                {
+                    @:privateAccess
+                    PlayState.instance.canPause = true;
+                    PlayState.instance.videoHandler = null;
+                }
+                PlayState.instance.videoHandler.readyCallback = function()
+                {
+                    //FlxVideo.vlcBitmap.pause();
+                }
+            }
+        });
+
+
+
+        setFunction("pauseLuaVideo", function() {
+            if (PlayState.instance.videoHandler != null)
+            {
+                #if desktop
+                if (FlxVideo.vlcBitmap != null)
+                {
+                    FlxVideo.vlcBitmap.pause();
+                }
+                #end
+            }
+        });
+        setFunction("resumeLuaVideo", function() {
+            if (PlayState.instance.videoHandler != null)
+            {
+                #if desktop
+                if (FlxVideo.vlcBitmap != null)
+                {
+                    FlxVideo.vlcBitmap.resume();
+                }
+                #end
+            }
+        });
+        setFunction("setLuaVideoTime", function(time:Float) {
+            if (PlayState.instance.videoHandler != null)
+            {
+                #if desktop
+                if (FlxVideo.vlcBitmap != null)
+                {
+                    FlxVideo.vlcBitmap.seek(time);
+                }
+                #end
+            }
+        });
+        setFunction("setLuaVideoHide", function(hide:Bool) {
+            if (PlayState.instance.videoHandler != null)
+            {
+                #if desktop
+                if (FlxVideo.vlcBitmap != null)
+                {
+                    FlxVideo.vlcBitmap.hideVideo = hide;
+                }
+                #end
+            }
+        });
+        setFunction("stopLuaVideo", function() {
+            if (PlayState.instance.videoHandler != null)
+            {
+                PlayState.instance.videoHandler.onVLCComplete();
+            }
+        });
+        #end
+        
 
 		setFunction("setWindowPos", function(x:Int, y:Int) {
 			Application.current.window.move(x, y);

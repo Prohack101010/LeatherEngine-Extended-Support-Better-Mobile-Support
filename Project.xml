@@ -17,8 +17,7 @@
 
 	<!-- LEATHER ENGINE CUSTOMIZATION -->
 	<!-- Comment out or delete a line to disable a feature. -->
-
-	<define name="VIDEOS_ALLOWED" /> <!--  Allows support for video files -->
+	<define name="VIDEOS_ALLOWED" if="web || windows" unless="32bit"/> <!--  Allows support for video files -->
 	<define name="DISCORD_ALLOWED" /> <!--  Allows support for Discord Rich Presence -->
 	<define name="MODDING_ALLOWED" /> <!-- Allows mod loading -->
 
@@ -60,6 +59,8 @@
 		vsync="false"
 		allow-high-dpi="true"
 	/>
+	<!--HTML5-specific-->
+	<window if="html5" resizable="true" />
 
 	<!-- Desktop-specific. -->
 	<window
@@ -69,6 +70,11 @@
 		resizable="true"
 		vsync="false"
 	/>
+		<!--Mobile-specific-->
+	<window if="mobile" orientation="landscape" fullscreen="true" resizable="false" allow-shaders="true" require-shaders="true" allow-high-dpi="true" />
+
+	<!--Switch-specific-->
+	<window if="switch" orientation="landscape" fullscreen="true" width="0" height="0" resizable="true" />
 
 	<!-- Path Settings. -->
 
