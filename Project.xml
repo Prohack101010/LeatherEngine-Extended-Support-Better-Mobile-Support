@@ -118,9 +118,6 @@
 	<haxelib name="flixel-perspective"/>
 	<haxelib name="hxgamemode" if="linux"/>
 
-	<!-- Android Tools -->
-	<haxelib name="extension-androidtools" if="android"/>
-
 	<!-- Compiler Arguments -->
 	<define name="no-deprecation-warnings"/>
 	<define name="message.reporting" value="pretty"/>
