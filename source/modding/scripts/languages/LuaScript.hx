@@ -45,7 +45,9 @@ import flixel.util.FlxStringUtil;
 import openfl.display.ShaderParameter;
 import flixel.input.gamepad.FlxGamepad;
 import flixel.input.FlxInput.FlxInputState;
+#if MODCHARTING_TOOLS
 import modcharting.FlxSprite3D;
+#end
 import flixel.perspective.PerspectiveSprite;
 import flixel.perspective.PerspectiveText;
 import shaders.Shaders.RTXEffect;
