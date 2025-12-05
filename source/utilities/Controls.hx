@@ -176,30 +176,30 @@ class Controls extends FlxActionSet {
 
 	#if mobile
 	public var isInSubstate:Bool = false; // don't worry about this it becomes true and false on it's own
-	public var requestedInstance(get, default):Dynamic; // is set to CoolState or CoolSubstate when the constructor is called
+	public var requestedInstance(get, default):Dynamic; // is set to MusicBeatState or MusicBeatSubstate when the constructor is called
 
-	private function mobilePadPressed(keys:Array<String>):Bool
+	private function mobilePadPressed(keys:String):Bool
 	{
 		if (keys != null && requestedInstance.mobilePad != null)
-			if (requestedInstance.mobilePad.buttonPressed(keys) == true)
+			if (requestedInstance.mobilePad.buttonPressed([keys]) == true)
 				return true;
 
 		return false;
 	}
 
-	private function mobilePadJustPressed(keys:Array<String>):Bool
+	private function mobilePadJustPressed(keys:String):Bool
 	{
 		if (keys != null && requestedInstance.mobilePad != null)
-			if (requestedInstance.mobilePad.buttonJustPressed(keys) == true)
+			if (requestedInstance.mobilePad.buttonJustPressed([keys]) == true)
 				return true;
 
 		return false;
 	}
 
-	private function mobilePadJustReleased(keys:Array<String>):Bool
+	private function mobilePadJustReleased(keys:String):Bool
 	{
 		if (keys != null && requestedInstance.mobilePad != null)
-			if (requestedInstance.mobilePad.buttonJustReleased(keys) == true)
+			if (requestedInstance.mobilePad.buttonJustReleased([keys]) == true)
 				return true;
 
 		return false;
@@ -211,7 +211,7 @@ class Controls extends FlxActionSet {
 		if (isInSubstate)
 			return MusicBeatSubstate.instance;
 		else
-			return CoolState.getState();
+			return MusicBeatState.getState();
 	}
 	#end
 

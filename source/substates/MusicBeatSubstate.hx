@@ -105,13 +105,10 @@ class MusicBeatSubstate extends FlxSubState {
 
 	
 	override function destroy():Void {
-		if (trackedInputsVirtualPad.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsVirtualPad);
-
 		super.destroy();
 
-		if (virtualPad != null)
-			virtualPad = FlxDestroyUtil.destroy(virtualPad);
+		if (mobilePad != null)
+			mobilePad = FlxDestroyUtil.destroy(mobilePad);
 	}
 
 

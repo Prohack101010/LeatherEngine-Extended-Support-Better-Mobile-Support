@@ -6,7 +6,7 @@ haxelib update haxelib --global --quiet
 haxelib git hxcpp https://github.com/FunkinCrew/hxcpp --quiet
 haxelib install format --quiet
 haxelib install hxp --quiet
-haxelib git lime https://github.com/HomuHomu833-haxe-stuff/lime --quiet --skip-dependencies
+haxelib git lime https://github.com/swordcubes-grave-of-shite/lime --quiet --skip-dependencies
 haxelib git openfl https://github.com/swordcubes-grave-of-shite/openfl --quiet --skip-dependencies
 haxelib git flixel https://github.com/swordcubes-grave-of-shite/flixel dev --quiet --skip-dependencies
 haxelib git flixel-addons https://github.com/swordcubes-grave-of-shite/flixel-addons dev --quiet --skip-dependencies
@@ -29,5 +29,6 @@ haxelib install hxcpp-debug-server --quiet
 haxelib install hxgamemode --quiet
 haxelib install mobile-controls --quiet
 haxelib install flixel-perspective --quiet
+haxelib install extension-androidtools --quiet
 
 echo Finished

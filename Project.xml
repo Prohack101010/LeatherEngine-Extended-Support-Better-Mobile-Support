@@ -13,10 +13,6 @@
 		company="leather128"
 	/>
 
-	<!-- Lime Fix -->
-	<haxedef name="lime_use_old_deltatime" />
-	<haxedef name="lime_disable_motion_sensors" />
-
 	<!-- LEATHER ENGINE CUSTOMIZATION -->
 	<define name="VIDEOS_ALLOWED" if="web || windows" unless="32bit"/>
 	<define name="DISCORD_ALLOWED" if="desktop"/>
@@ -94,11 +90,6 @@
 	<haxelib name="flixel-ui"/>
 	<haxelib name="flxanimate"/>
 
-	<!-- Add Mobile Controls -->
-	<assets path="mobile" rename="assets/mobile" if="mobile"/>
-	<haxelib name="mobile-controls"/>
-	<haxedef name="mobile_controls_file_support"/>
-
 	<!-- Scripting -->
 	<haxelib name="hscript-improved" rename="hscript" if="HSCRIPT_ALLOWED"/>
 	<haxelib name="scriptless-polymod" if="MODDING_ALLOWED"/>
@@ -117,6 +108,12 @@
 	<haxelib name="grig.audio"/>
 	<haxelib name="flixel-perspective"/>
 	<haxelib name="hxgamemode" if="linux"/>
+
+	<!-- Android Libs -->
+	<assets path="mobile" rename="assets/mobile" if="mobile"/>
+	<haxelib name="extension-androidtools" if="android"/>
+	<haxelib name="mobile-controls"/>
+	<haxedef name="mobile_controls_file_support"/>
 
 	<!-- Compiler Arguments -->
 	<define name="no-deprecation-warnings"/>
