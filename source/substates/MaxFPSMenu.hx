@@ -32,7 +32,7 @@ class MaxFPSMenu extends MusicBeatSubstate {
 		add(offsetText);
 
 		
-        addVirtualPad(LEFT_RIGHT, A_B);
+        addMobilePad('LEFT_RIGHT', 'A_B');
 	}
 
 	override function update(elapsed:Float) {
@@ -57,7 +57,7 @@ class MaxFPSMenu extends MusicBeatSubstate {
 				FlxG.updateFramerate = fps;
 			}
 			FlxG.state.closeSubState();
-			 removeVirtualPad();
+			 removeMobilePad();
 		}
 
 		if (left && !FlxG.keys.pressed.SHIFT)

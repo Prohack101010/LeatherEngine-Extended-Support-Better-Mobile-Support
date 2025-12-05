@@ -15,7 +15,9 @@ import flixel.FlxSubState;
 import modding.scripts.languages.HScript;
 
 
-import mobile.flixel.FlxVirtualPad;
+#if mobile
+import mobile.objects.FunkinMobilePad;
+#end
 import flixel.FlxCamera;
 import flixel.input.actions.FlxActionInput;
 import flixel.util.FlxDestroyUtil;
@@ -29,42 +31,36 @@ class MusicBeatSubstate extends FlxSubState {
 	public var stateScript:HScript;
 	#end
 	public static var usingController:Bool = false;
-	var virtualPad:FlxVirtualPad;
-	var trackedInputsVirtualPad:Array<FlxActionInput> = [];
+	#if mobile
+	var virtualPad:FunkinMobilePad;
 	//mobile
-	public function addVirtualPad(DPad:FlxDPadMode, Action:FlxActionMode, visible:Bool = true):Void
+	public function addMobilePad(DPad:String, Action:String, visible:Bool = true):Void
 	{
-		if (virtualPad != null)
-			removeVirtualPad();
+		if (mobilePad != null)
+			removeMobilePad();
 
-		virtualPad = new FlxVirtualPad(DPad, Action);
-		virtualPad.visible = visible;
-		add(virtualPad);
-
-		controls.setVirtualPad(virtualPad, DPad, Action);
-		trackedInputsVirtualPad = controls.trackedInputs;
-		controls.trackedInputs = [];
+		mobilePad = new FunkinMobilePad(DPad, Action, 0.7);
+		mobilePad.visible = visible;
+		add(mobilePad);
 	}
 
-	public function addVirtualPadCamera(DefaultDrawTarget:Bool = false):Void
+	public function addMobilePadCamera(DefaultDrawTarget:Bool = false):Void
 	{
-		if (virtualPad != null)
+		if (mobilePad != null)
 		{
 			var camControls:FlxCamera = new FlxCamera();
 			camControls.bgColor.alpha = 0;
 			FlxG.cameras.add(camControls, DefaultDrawTarget);
-			virtualPad.cameras = [camControls];
+			mobilePad.cameras = [camControls];
 		}
 	}
 
-	public function removeVirtualPad():Void
+	public function removeMobilePad():Void
 	{
-		if (trackedInputsVirtualPad.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsVirtualPad);
-
-		if (virtualPad != null)
-			remove(virtualPad);
+		if (mobilePad != null)
+			remove(mobilePad);
 	}
+	#end
 	override public function create() {
 		super.create();
 		#if HSCRIPT_ALLOWED

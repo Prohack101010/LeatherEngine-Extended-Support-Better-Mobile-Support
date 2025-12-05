@@ -286,8 +286,8 @@ class OptionsMenu extends MusicBeatState {
 		OptionsMenu.playing = true;
 
 		#if mobile
-		addVirtualPad(UP_DOWN, A_B);
-		addVirtualPadCamera();
+		addMobilePad('UP_DOWN', 'A_B');
+		addMobilePadCamera();
 		#end
 	}
 

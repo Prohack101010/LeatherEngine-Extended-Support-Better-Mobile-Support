@@ -12,7 +12,7 @@ import flixel.FlxG;
 import lime.app.Application;
 #if mobile //mobile stuff
 import flixel.input.gamepad.FlxGamepad;
-import mobile.flixel.FlxVirtualPad;
+import mobile.objects.FunkinMobilePad;
 import flixel.FlxCamera;
 import flixel.input.actions.FlxActionInput;
 import flixel.util.FlxDestroyUtil;
@@ -34,47 +34,45 @@ class MusicBeatState extends #if MODCHARTING_TOOLS modcharting.ModchartMusicBeat
 
 	public static var fullscreenBind:String = "F11";
 
+	public static function getState():MusicBeatState {
+		var curState:Dynamic = FlxG.state;
+		var leState:MusicBeatState = curState;
+		return leState;
+	}
+
 	#if HSCRIPT_ALLOWED
 	public var stateScript:HScript;
 	#end
 	public static var usingController:Bool = false;
 	#if mobile
-	var virtualPad:FlxVirtualPad;
-	var trackedInputsVirtualPad:Array<FlxActionInput> = [];
+	var mobilePad:FunkinMobilePad;
 
 	//mobile
-	public function addVirtualPad(DPad:FlxDPadMode, Action:FlxActionMode, visible:Bool = true):Void
+	public function addMobilePad(DPad:String, Action:String, visible:Bool = true):Void
 	{
-		if (virtualPad != null)
-			removeVirtualPad();
+		if (mobilePad != null)
+			removeMobilePad();
 
-		virtualPad = new FlxVirtualPad(DPad, Action);
-		virtualPad.visible = visible;
-		add(virtualPad);
-
-		controls.setVirtualPad(virtualPad, DPad, Action);
-		trackedInputsVirtualPad = controls.trackedInputs;
-		controls.trackedInputs = [];
+		mobilePad = new FunkinMobilePad(DPad, Action, 0.7);
+		mobilePad.visible = visible;
+		add(mobilePad);
 	}
 
-	public function addVirtualPadCamera(DefaultDrawTarget:Bool = false):Void
+	public function addMobilePadCamera(DefaultDrawTarget:Bool = false):Void
 	{
-		if (virtualPad != null)
+		if (mobilePad != null)
 		{
 			var camControls:FlxCamera = new FlxCamera();
 			camControls.bgColor.alpha = 0;
 			FlxG.cameras.add(camControls, DefaultDrawTarget);
-			virtualPad.cameras = [camControls];
+			mobilePad.cameras = [camControls];
 		}
 	}
 
-	public function removeVirtualPad():Void
+	public function removeMobilePad():Void
 	{
-		if (trackedInputsVirtualPad.length > 0)
-			controls.removeVirtualControlsInput(trackedInputsVirtualPad);
-
-		if (virtualPad != null)
-			remove(virtualPad);
+		if (mobilePad != null)
+			remove(mobilePad);
 	}
 	#end
 

@@ -6,7 +6,7 @@ haxelib --global update haxelib
 haxelib git hxcpp https://github.com/FunkinCrew/hxcpp
 haxelib install format
 haxelib install hxp
-haxelib --skip-dependencies git lime https://github.com/swordcubes-grave-of-shite/lime
+haxelib --skip-dependencies git lime https://github.com/HomuHomu833-haxe-stuff/lime
 haxelib --skip-dependencies git openfl https://github.com/swordcubes-grave-of-shite/openfl
 haxelib --skip-dependencies git flixel https://github.com/swordcubes-grave-of-shite/flixel dev
 haxelib --skip-dependencies git flixel-addons https://github.com/swordcubes-grave-of-shite/flixel-addons dev
@@ -27,5 +27,6 @@ haxelib git jsonpath https://github.com/EliteMasterEric/jsonpath
 haxelib --skip-dependencies git jsonpatch https://github.com/EliteMasterEric/jsonpatch
 haxelib install hxcpp-debug-server
 haxelib install hxgamemode
+haxelib install mobile-controls
 
 echo Finished

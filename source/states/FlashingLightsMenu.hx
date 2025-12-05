@@ -22,7 +22,7 @@ class FlashingLightsMenu extends MusicBeatState {
 		text.screenCenter();
 		add(text);
 		#if mobile
-		addVirtualPad(NONE, A_B);
+		addMobilePad('NONE', 'A_B');
 		#end
 	}
 
@@ -33,8 +33,8 @@ class FlashingLightsMenu extends MusicBeatState {
 			return;
 		}
 
-		var yes:Bool = #if mobile virtualPad.buttonA.justPressed || #end FlxG.keys.justPressed.Y;
-		var no:Bool = #if mobile virtualPad.buttonB.justPressed || #end FlxG.keys.justPressed.N;
+		var yes:Bool = #if mobile mobilePad.getButtonFromName('buttonA').justPressed || #end FlxG.keys.justPressed.Y;
+		var no:Bool = #if mobile mobilePad.getButtonFromName('buttonB').justPressed || #end FlxG.keys.justPressed.N;
 
 		if (yes) {
 			Options.setData(true, 'flashingLights');

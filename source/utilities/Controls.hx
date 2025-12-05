@@ -10,8 +10,6 @@ import flixel.input.actions.FlxActionSet;
 import flixel.input.gamepad.FlxGamepadButton;
 import flixel.input.gamepad.FlxGamepadInputID;
 import flixel.input.keyboard.FlxKey;
-import mobile.flixel.FlxButton;
-import mobile.flixel.FlxVirtualPad;
 
 enum abstract Action(String) to String from String {
 	var UP = "up";
@@ -94,77 +92,77 @@ class Controls extends FlxActionSet {
 	public var UP(get, never):Bool;
 
 	inline function get_UP()
-		return _up.check();
+		return _up.check() #if mobile || mobilePadPressed('UP') #end;
 
 	public var LEFT(get, never):Bool;
 
 	inline function get_LEFT()
-		return _left.check();
+		return _left.check() #if mobile || mobilePadPressed('LEFT') #end;
 
 	public var RIGHT(get, never):Bool;
 
 	inline function get_RIGHT()
-		return _right.check();
+		return _right.check() #if mobile || mobilePadPressed('RIGHT') #end;
 
 	public var DOWN(get, never):Bool;
 
 	inline function get_DOWN()
-		return _down.check();
+		return _down.check() #if mobile || mobilePadPressed('DOWN') #end;
 
 	public var UP_P(get, never):Bool;
 
 	inline function get_UP_P()
-		return _upP.check();
+		return _upP.check() #if mobile || mobilePadJustPressed('UP') #end;
 
 	public var LEFT_P(get, never):Bool;
 
 	inline function get_LEFT_P()
-		return _leftP.check();
+		return _leftP.check() #if mobile || mobilePadJustPressed('LEFT') #end;
 
 	public var RIGHT_P(get, never):Bool;
 
 	inline function get_RIGHT_P()
-		return _rightP.check();
+		return _rightP.check() #if mobile || mobilePadJustPressed('RIGHT') #end;
 
 	public var DOWN_P(get, never):Bool;
 
 	inline function get_DOWN_P()
-		return _downP.check();
+		return _downP.check() #if mobile || mobilePadJustPressed('DOWN') #end;
 
 	public var UP_R(get, never):Bool;
 
 	inline function get_UP_R()
-		return _upR.check();
+		return _upR.check() #if mobile || mobilePadJustReleased('UP') #end;
 
 	public var LEFT_R(get, never):Bool;
 
 	inline function get_LEFT_R()
-		return _leftR.check();
+		return _leftR.check() #if mobile || mobilePadJustReleased('LEFT') #end;
 
 	public var RIGHT_R(get, never):Bool;
 
 	inline function get_RIGHT_R()
-		return _rightR.check();
+		return _rightR.check() #if mobile || mobilePadJustReleased('RIGHT') #end;
 
 	public var DOWN_R(get, never):Bool;
 
 	inline function get_DOWN_R()
-		return _downR.check();
+		return _downR.check() #if mobile || mobilePadJustReleased('DOWN') #end;
 
 	public var ACCEPT(get, never):Bool;
 
 	inline function get_ACCEPT()
-		return _accept.check();
+		return _accept.check() #if mobile || mobilePadJustPressed('A') #end;
 
 	public var BACK(get, never):Bool;
 
 	inline function get_BACK()
-		return _back.check();
+		return _back.check() #if mobile || mobilePadJustPressed('B') #end;
 
 	public var PAUSE(get, never):Bool;
 
 	inline function get_PAUSE()
-		return _pause.check();
+		return _pause.check() #if mobile || mobilePadJustPressed('P') #end;
 
 	public var RESET(get, never):Bool;
 
@@ -175,6 +173,47 @@ class Controls extends FlxActionSet {
 
 	inline function get_CHEAT()
 		return _cheat.check();
+
+	#if mobile
+	public var isInSubstate:Bool = false; // don't worry about this it becomes true and false on it's own
+	public var requestedInstance(get, default):Dynamic; // is set to CoolState or CoolSubstate when the constructor is called
+
+	private function mobilePadPressed(keys:Array<String>):Bool
+	{
+		if (keys != null && requestedInstance.mobilePad != null)
+			if (requestedInstance.mobilePad.buttonPressed(keys) == true)
+				return true;
+
+		return false;
+	}
+
+	private function mobilePadJustPressed(keys:Array<String>):Bool
+	{
+		if (keys != null && requestedInstance.mobilePad != null)
+			if (requestedInstance.mobilePad.buttonJustPressed(keys) == true)
+				return true;
+
+		return false;
+	}
+
+	private function mobilePadJustReleased(keys:Array<String>):Bool
+	{
+		if (keys != null && requestedInstance.mobilePad != null)
+			if (requestedInstance.mobilePad.buttonJustReleased(keys) == true)
+				return true;
+
+		return false;
+	}
+
+	@:noCompletion
+	private function get_requestedInstance():Dynamic
+	{
+		if (isInSubstate)
+			return MusicBeatSubstate.instance;
+		else
+			return CoolState.getState();
+	}
+	#end
 
 	public function new(name, scheme = None) {
 		instance = this;
@@ -215,57 +254,6 @@ class Controls extends FlxActionSet {
 		var input:FlxActionInputDigitalIFlxInput = new FlxActionInputDigitalIFlxInput(button, state);
 		trackedInputs.push(input);
 		action.add(input);
-	}
-
-	public function setVirtualPad(VirtualPad:FlxVirtualPad, DPad:FlxDPadMode, Action:FlxActionMode):Void
-	{
-		if (VirtualPad == null)
-			return;
-
-		switch (DPad)
-		{
-			case UP_DOWN:
-				inline forEachBound(Control.UP, (action, state) -> addButton(action, VirtualPad.buttonUp, state));
-				inline forEachBound(Control.DOWN, (action, state) -> addButton(action, VirtualPad.buttonDown, state));
-			case LEFT_RIGHT:
-				inline forEachBound(Control.LEFT, (action, state) -> addButton(action, VirtualPad.buttonLeft, state));
-				inline forEachBound(Control.RIGHT, (action, state) -> addButton(action, VirtualPad.buttonRight, state));
-			case NONE: // do nothing
-			default:
-				inline forEachBound(Control.UP, (action, state) -> addButton(action, VirtualPad.buttonUp, state));
-				inline forEachBound(Control.DOWN, (action, state) -> addButton(action, VirtualPad.buttonDown, state));
-				inline forEachBound(Control.LEFT, (action, state) -> addButton(action, VirtualPad.buttonLeft, state));
-				inline forEachBound(Control.RIGHT, (action, state) -> addButton(action, VirtualPad.buttonRight, state));
-		}
-
-		switch (Action)
-		{
-			case A:
-				inline forEachBound(Control.ACCEPT, (action, state) -> addButton(action, VirtualPad.buttonA, state));
-			case B:
-				inline forEachBound(Control.BACK, (action, state) -> addButton(action, VirtualPad.buttonB, state));
-			case NONE | P: // do nothing
-			default:
-				inline forEachBound(Control.ACCEPT, (action, state) -> addButton(action, VirtualPad.buttonA, state));
-				inline forEachBound(Control.BACK, (action, state) -> addButton(action, VirtualPad.buttonB, state));
-		}
-	}
-
-	public function removeVirtualControlsInput(Tinputs:Array<FlxActionInput>):Void
-	{
-		for (action in this.digitalActions)
-		{
-			var i = action.inputs.length;
-			while (i-- > 0)
-			{
-				var x = Tinputs.length;
-				while (x-- > 0)
-				{
-					if (Tinputs[x] == action.inputs[i])
-						action.remove(action.inputs[i]);
-				}
-			}
-		}
 	}
 
 	@:noCompletion

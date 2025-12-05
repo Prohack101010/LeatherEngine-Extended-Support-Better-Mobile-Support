@@ -131,13 +131,9 @@
 	<define name="FLX_NO_DEBUG" unless="debug"/>
 	<define name="FLX_NO_HEALTH"/>
 
-	<!-- Android Config -->
-	<section if="android">
-		<config>
-			<android gradle-version="7.4.2" gradle-plugin="7.3.1"/>
-			<android target-sdk-version="30" if="${lime < 8.1.0}"/>
-		</config>
-	</section>
+	<!-- Lime Fix -->
+	<haxedef name="lime_use_old_deltatime" />
+	<haxedef name="lime_disable_motion_sensors" />
 
 	<!-- iOS -->
 	<section if="ios">

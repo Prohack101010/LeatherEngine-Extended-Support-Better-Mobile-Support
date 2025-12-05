@@ -9,14 +9,13 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.input.gamepad.FlxGamepadInputID;
 import flixel.input.gamepad.FlxGamepad;
-import mobile.flixel.FlxVirtualPad;
 
 class MobileControlsAlphaMenu extends substates.MusicBeatSubstate
 {
     var opacityValue:Float = 0.0;
     var offsetText:FlxText = new FlxText(0,0,0,"Alpha: 0",64)
         .setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, OUTLINE, FlxColor.BLACK);
-    var vpad:FlxVirtualPad;
+    var vpad:FunkinMobilePad;
     public function new()
     {
         super();
@@ -35,7 +34,7 @@ class MobileControlsAlphaMenu extends substates.MusicBeatSubstate
         add(offsetText);
 
         
-        vpad = new FlxVirtualPad(LEFT_RIGHT, A);
+        vpad = new FunkinMobilePad('LEFT_RIGHT', 'A');
         add(vpad);
         vpad.scrollFactor.set();
 
@@ -50,13 +49,13 @@ class MobileControlsAlphaMenu extends substates.MusicBeatSubstate
         var back = controls.BACK;
 
         // VIRTUALPAD INPUT
-        if (vpad.buttonLeft.justPressed)
+        if (vpad.getButtonFromName('buttonLeft').justPressed)
             leftP = true;
 
-        if (vpad.buttonRight.justPressed)
+        if (vpad.getButtonFromName('buttonRight').justPressed)
             rightP = true;
 
-        if (vpad.buttonA.justPressed)
+        if (vpad.getButtonFromName('buttonA').justPressed)
             back = true;
 
         // GAMEPAD

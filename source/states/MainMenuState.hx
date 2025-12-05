@@ -137,7 +137,7 @@ class MainMenuState extends MusicBeatState {
 		super.create();
 
 		#if mobile
-		addVirtualPad(UP_DOWN, #if MODDING_ALLOWED A_B_C #else A_B #end);
+		addMobilePad('UP_DOWN', #if MODDING_ALLOWED 'A_B_C' #else 'A_B' #end);
 		#end
 		call("createPost");
 	}
