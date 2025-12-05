@@ -10,7 +10,7 @@ jobs:
         include:
           - name: Android
             os: ubuntu-24.04
-            buildArgs: "android -final"
+            buildArgs: "android -D ONLY_ARM64"
             setupCommand: sh ./build/install_libraries.sh
             artifactName: androidBuild
             artifactPath: "export/release/android/bin/app/build/outputs/apk/release/*.apk"
