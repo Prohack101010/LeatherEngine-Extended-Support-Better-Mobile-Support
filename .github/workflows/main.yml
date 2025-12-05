@@ -9,7 +9,7 @@ jobs:
       matrix:
         include:
           - name: Android
-            os: macos-26
+            os: ubuntu-24.04
             buildArgs: "android -D ONLY_ARM64"
             setupCommand: sh ./build/install_libraries.sh
             artifactName: androidBuild
