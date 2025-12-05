@@ -246,16 +246,6 @@ class Controls extends FlxActionSet {
 	public var trackedInputs:Array<FlxActionInput> = [];
 	public var mobileC(get, never):Bool;
 
-	public function addButton(action:FlxActionDigital, button:FlxButton, state:FlxInputState):Void
-	{
-		if (button == null)
-			return;
-
-		var input:FlxActionInputDigitalIFlxInput = new FlxActionInputDigitalIFlxInput(button, state);
-		trackedInputs.push(input);
-		action.add(input);
-	}
-
 	@:noCompletion
 	private function get_mobileC():Bool
 	{
