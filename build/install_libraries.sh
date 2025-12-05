@@ -5,7 +5,7 @@ echo Installing all required libraries.
 haxelib update haxelib --global --quiet
 haxelib install format --quiet
 haxelib install hxp --quiet
-haxelib git lime https://github.com/swordcubes-grave-of-shite/lime --quiet --skip-dependencies
+haxelib git lime https://github.com/Prohack101010/lime_ex --quiet --skip-dependencies
 haxelib git openfl https://github.com/swordcubes-grave-of-shite/openfl --quiet --skip-dependencies
 haxelib git flixel https://github.com/swordcubes-grave-of-shite/flixel dev --quiet --skip-dependencies
 haxelib git flixel-addons https://github.com/swordcubes-grave-of-shite/flixel-addons dev --quiet --skip-dependencies
