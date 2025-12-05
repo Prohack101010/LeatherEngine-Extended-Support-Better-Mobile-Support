@@ -26,13 +26,14 @@ class MusicBeatSubstate extends FlxSubState {
 	public var curStep:Int = 0;
 	public var curBeat:Int = 0;
 	public var controls(get, never):Controls;
+	public static var instance:MusicBeatSubstate;
 
 	#if HSCRIPT_ALLOWED
 	public var stateScript:HScript;
 	#end
 	public static var usingController:Bool = false;
 	#if mobile
-	var virtualPad:FunkinMobilePad;
+	var mobilePad:FunkinMobilePad;
 	//mobile
 	public function addMobilePad(DPad:String, Action:String, visible:Bool = true):Void
 	{
@@ -69,6 +70,10 @@ class MusicBeatSubstate extends FlxSubState {
 			stateScript = new HScript('mods/${Options.getData("curMod")}/classes/${statePath}.hx');
 		}
 		#end
+	}
+	public function new() {
+		instance = this;
+		super();
 	}
 
 	override function update(elapsed:Float) {
