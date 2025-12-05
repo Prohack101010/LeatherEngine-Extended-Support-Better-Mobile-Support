@@ -1,4 +1,4 @@
-name: Build Psych Online Mobile
+name: Build Leather Engine Mobile
 
 on: workflow_dispatch
 
