@@ -7,6 +7,8 @@ import utilities.Options;
 #if mobile
 import mobile.*;
 import mobile.objects.*;
+import substates.MusicBeatSubstate;
+import states.MusicBeatState;
 #end
 
 #if sys

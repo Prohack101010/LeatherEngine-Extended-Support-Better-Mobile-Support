@@ -34,7 +34,7 @@ class FunkinMobilePad extends OGMobilePad {
 
 		button.immovable = true;
 		button.solid = button.moves = false;
-		button.antialiasing = ClientPrefs.data.antialiasing;
+		button.antialiasing = Options.getData("antialiasing");
 		button.tag = framePath.toUpperCase();
 
 		if (ColorS != -1) button.color = ColorS;

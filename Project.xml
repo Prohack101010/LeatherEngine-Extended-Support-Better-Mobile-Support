@@ -18,7 +18,7 @@
 	<define name="DISCORD_ALLOWED" if="desktop"/>
 
 	<define name="MODDING_ALLOWED"/>
-	<define name="MODCHARTING_TOOLS"/>
+	<!-- <define name="MODCHARTING_TOOLS"/> -->
 
 	<define name="HSCRIPT_ALLOWED"/>
 	<define name="CHECK_FOR_UPDATES"/>
