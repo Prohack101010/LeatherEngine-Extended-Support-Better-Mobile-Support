@@ -10,7 +10,7 @@ haxelib git openfl https://github.com/swordcubes-grave-of-shite/openfl --quiet -
 haxelib git flixel https://github.com/swordcubes-grave-of-shite/flixel dev --quiet --skip-dependencies
 haxelib git flixel-addons https://github.com/swordcubes-grave-of-shite/flixel-addons dev --quiet --skip-dependencies
 haxelib git flixel-ui https://github.com/swordcubes-grave-of-shite/flixel-ui dev --quiet --skip-dependencies
-haxelib git linc_luajit https://github.com/Leather128/linc_luajit.git --quiet
+haxelib git linc_luajit https://github.com/th2l-devs/linc_luajit --quiet
 haxelib git hscript-improved https://github.com/CodenameCrew/hscript-improved fe673c21b278819805aaa730216ec527c2507443 --quiet
 haxelib git scriptless-polymod https://github.com/Vortex2Oblivion/scriptless-polymod --quiet
 haxelib git hxNoise https://github.com/whuop/hxNoise --quiet
