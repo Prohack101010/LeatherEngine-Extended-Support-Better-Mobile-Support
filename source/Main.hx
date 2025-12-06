@@ -37,50 +37,73 @@ class Main extends Sprite {
 	public static var onCrash(default, null):FlxTypedSignal<UncaughtErrorEvent->Void> = new FlxTypedSignal<UncaughtErrorEvent->Void>();
 
 	public function new() {
+		trace('wdym');
 		#if mobile
 		SUtil.uncaughtErrorHandler();
+		SUtil.checkFiles();
 		#end
+		trace('wdym');
 		super();
+		trace('wdym');
 
 		#if sys
 		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, _onCrash);
 		#end
+		trace('wdym');
 
 		#if cpp
 		untyped __global__.__hxcpp_set_critical_error_handler(_onCrash);
 		#end
+		trace('wdym');
 
 		CoolUtil.haxe_trace = Log.trace;
+		trace('wdym');
 		Log.trace = CoolUtil.haxe_print;
+		trace('wdym');
 		OpenFLLog.throwErrors = false;
+		trace('wdym');
 
 		game = new FlxGame(1280, 720, TitleState, 60, 60, true);
+		trace('wdym');
 
 		FlxG.signals.preStateSwitch.add(() -> {
 			Main.previousState = FlxG.state;
 		});
+		trace('wdym');
 
 		FlxG.signals.preStateCreate.add((state) -> {
 			CoolUtil.clearMemory();
 		});
+		trace('wdym');
 
 		@:privateAccess
 		game._customSoundTray = ui.FunkinSoundTray;
+		trace('wdym');
 
 		addChild(game);
+		trace('wdym');
 
 		logsOverlay = new Logs();
+		trace('wdym');
 		logsOverlay.visible = false;
+		trace('wdym');
 		addChild(logsOverlay);
+		trace('wdym');
 
 		init();
+		trace('wdym');
 
 		LogStyle.WARNING.onLog.add((data, ?pos) -> trace(data, WARNING, pos));
+		trace('wdym');
 		LogStyle.ERROR.onLog.add((data, ?pos) -> trace(data, ERROR, pos));
+		trace('wdym');
 		LogStyle.NOTICE.onLog.add((data, ?pos) -> trace(data, LOG, pos));
+		trace('wdym');
 
 		display = new SimpleInfoDisplay(8, 3, 0xFFFFFF, "_sans");
+		trace('wdym');
 		addChild(display);
+		trace('wdym');
 
 		// fix shaders cuando cambias tamaño
 		FlxG.signals.gameResized.add(function(w, h) {
