@@ -3,6 +3,13 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/xsd/project-1.0.4.xsd">
 
+	<!-- ___ Build with spesific libraries ___ -->
+	<architecture exclude="armv7" if="ONLY_ARM64" />
+	<architecture exclude="armeabi-v7a" if="ONLY_ARM64" />
+	<architecture exclude="arm64" if="ONLY_ARMV7" />
+	<architecture exclude="arm64-v8a" if="ONLY_ARMV7" />
+	<define name="debugBuild" if="termux" />
+
 	<!-- Application Settings -->
 	<app
 		title="Leather Engine"
@@ -103,7 +110,7 @@
 
 	<!-- Extra Libs -->
 	<haxelib name="hxNoise"/>
-	<haxelib name="fnf-modcharting-tools" if="MODCHARTING_TOOLS" unless="hl"/>
+	<haxelib name="fnf-modcharting-tools" if="MODCHARTING_TOOLS	" unless="hl"/>
 	<haxelib name="funkin.vis"/>
 	<haxelib name="grig.audio"/>
 	<haxelib name="flixel-perspective"/>

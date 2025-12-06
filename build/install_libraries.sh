@@ -29,6 +29,6 @@ haxelib install hxgamemode --quiet
 haxelib install mobile-controls --quiet
 haxelib install flixel-perspective --quiet
 haxelib install extension-androidtools --quiet --skip-dependencies
-haxelib git hxcpp https://github.com/CodenameCrew/cne-hxcpp --quiet
+haxelib git hxcpp https://github.com/Prohack101010/hxcpp_ex.git becf3f8bea42641c03b1924b40e5f5fc5dd255d1 --quiet
 
 echo Finished
